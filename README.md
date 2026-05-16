@@ -64,3 +64,17 @@ php artisan test
 
 `php artisan route:list` should show product routes only under `/api/v1` and no
 undocumented product route outside `routes/api.php`.
+
+## Docker Test Runtime
+
+Use Docker Compose when the host PHP runtime does not include a PDO database
+driver or when tests should run against MySQL:
+
+```bash
+docker compose build app
+docker compose run --rm app composer install
+docker compose run --rm app php artisan test
+```
+
+The Compose stack provides PHP 8.3 with `pdo_mysql` and a MySQL 8 test database
+named `schoolmaster_testing`.

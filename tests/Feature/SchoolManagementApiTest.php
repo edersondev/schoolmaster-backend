@@ -49,7 +49,10 @@ final class SchoolManagementApiTest extends TestCase
     {
         $token = $this->bearerTokenFor($this->createPlatformUser([]));
 
-        $this->withToken($token)->postJson('/api/v1/schools', [])
+        $this->withToken($token)->postJson('/api/v1/schools', [
+            'name' => 'Forbidden School',
+            'code' => 'FORBIDDEN',
+        ])
             ->assertForbidden();
 
         $authorizedToken = $this->bearerTokenFor($this->createPlatformUser());

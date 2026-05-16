@@ -19,7 +19,7 @@ final class LoginAttemptControlService
         $lockedUntil = $this->lockedUntil($email, $ip);
 
         if ($lockedUntil !== null && $lockedUntil->isFuture()) {
-            throw new AuthLockoutException(now()->diffInSeconds($lockedUntil, false));
+            throw new AuthLockoutException((int) ceil(now()->diffInSeconds($lockedUntil, false)));
         }
     }
 
