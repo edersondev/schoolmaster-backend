@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+final class PermissionResource extends JsonResource
+{
+    public function toArray(Request $request): array
+    {
+        return [
+            'id' => $this->uuid,
+            'code' => $this->code,
+            'name' => $this->name,
+            'scope' => $this->scope,
+            'status' => $this->status,
+        ];
+    }
+}
