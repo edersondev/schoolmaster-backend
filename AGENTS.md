@@ -117,4 +117,7 @@ Do not start with implementation when the specs or OpenAPI contract are missing 
 <!-- SPECKIT START -->
 For additional implementation context, read the current plan in the `/specs`
 submodule before making substantial changes.
+
+Current school administration implementation context:
+`specs/specs/003-backend-school-admin/quickstart.md`.
 <!-- SPECKIT END -->

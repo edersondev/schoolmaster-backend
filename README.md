@@ -32,8 +32,9 @@ SchoolMaster uses MySQL as the primary transactional datastore. The default
 
 ## API Boundary
 
-Product APIs are RESTful and versioned under `/api/v1`. The first approved
-backend slice is limited to these OpenAPI operation IDs:
+Product APIs are RESTful and versioned under `/api/v1`. The approved backend
+foundation and school administration slices are limited to these OpenAPI
+operation IDs:
 
 - `login`
 - `getCurrentUser`
@@ -42,6 +43,17 @@ backend slice is limited to these OpenAPI operation IDs:
 - `createSchool`
 - `getSchool`
 - `updateSchool`
+- `listUsers`
+- `createUser`
+- `listRoles`
+- `createRole`
+- `listPermissions`
+- `listAcademicYears`
+- `createAcademicYear`
+- `listAcademicPeriods`
+- `createAcademicPeriod`
+- `listGuardians`
+- `createGuardian`
 
 Operational framework routes, such as Laravel health checks, are not product
 feature routes. Product Blade views are not part of this backend.

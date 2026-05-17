@@ -15,13 +15,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $permissions = collect([
-            ['code' => 'schools.view', 'name' => 'View schools', 'scope' => 'platform'],
-            ['code' => 'schools.manage', 'name' => 'Manage schools', 'scope' => 'platform'],
-        ])->mapWithKeys(function (array $data): array {
-            $permission = Permission::query()->firstOrCreate(['code' => $data['code']], $data);
+        $this->call(PermissionSeeder::class);
 
-            return [$data['code'] => $permission];
+        $permissions = collect(['schools.view', 'schools.manage'])->mapWithKeys(function (string $code): array {
+            $permission = Permission::query()->where('code', $code)->firstOrFail();
+
+            return [$code => $permission];
         });
 
         $role = Role::query()->firstOrCreate([

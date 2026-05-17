@@ -8,9 +8,11 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -54,6 +56,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class);
     }
 
+    public function studentProfile(): HasOne
+    {
+        return $this->hasOne(StudentProfile::class);
+    }
+
     public function permissions()
     {
         return Permission::query()
@@ -67,6 +74,19 @@ class User extends Authenticatable
             ->where('roles.status', 'active')
             ->where('roles.scope', $scope)
             ->whereHas('permissions', fn ($query) => $query->where('code', $code)->where('permissions.status', 'active'))
+            ->exists();
+    }
+
+    public function hasSchoolPermission(string $code, int $schoolId): bool
+    {
+        return $this->roles()
+            ->where('roles.status', 'active')
+            ->where('roles.scope', 'school')
+            ->where('roles.school_id', $schoolId)
+            ->whereHas('permissions', fn (Builder $query) => $query
+                ->where('code', $code)
+                ->where('scope', 'school')
+                ->where('permissions.status', 'active'))
             ->exists();
     }
 
