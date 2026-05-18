@@ -65,55 +65,67 @@ final class TeacherContentUploadValidator
             'application/x-tar',
         ];
 
-        $officeExtensions = ['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp'];
-        $officeZipContainer = $contentType === 'office_document'
-            && in_array($extension, $officeExtensions, true)
-            && in_array('application/zip', [$declared, $detected], true);
-
-        return ! $officeZipContainer && (in_array($extension, $blockedExtensions, true)
-            || in_array($declared, $blockedMimes, true)
-            || in_array($detected, $blockedMimes, true));
+        return in_array($extension, $blockedExtensions, true)
+            || ($this->isBlockedMime($declared, $contentType, $extension, $blockedMimes))
+            || ($this->isBlockedMime($detected, $contentType, $extension, $blockedMimes));
     }
 
     private function isCompatible(string $contentType, string $extension, string $declared, string $detected): bool
     {
+        return $this->hasCompatibleExtension($contentType, $extension)
+            && $this->isCompatibleMime($contentType, $extension, $declared)
+            && $this->isCompatibleMime($contentType, $extension, $detected);
+    }
+
+    private function hasCompatibleExtension(string $contentType, string $extension): bool
+    {
         return match ($contentType) {
-            'pdf' => $extension === 'pdf' && $this->matchesAny([$declared, $detected], ['application/pdf']),
-            'image' => $this->startsWithAny([$declared, $detected], 'image/'),
-            'text' => in_array($extension, ['txt', 'csv'], true)
-                && $this->matchesAny([$declared, $detected], ['text/plain', 'text/csv']),
-            'office_document' => in_array($extension, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'], true)
-                && $this->matchesAny([$declared, $detected], [
-                    'application/msword',
-                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    'application/vnd.ms-excel',
-                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    'application/vnd.ms-powerpoint',
-                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                    'application/vnd.oasis.opendocument.text',
-                    'application/vnd.oasis.opendocument.spreadsheet',
-                    'application/vnd.oasis.opendocument.presentation',
-                    'application/zip',
-                ]),
+            'pdf' => $extension === 'pdf',
+            'image' => in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'], true),
+            'text' => in_array($extension, ['txt', 'csv'], true),
+            'office_document' => in_array($extension, ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'], true),
             default => false,
         };
     }
 
-    /**
-     * @param  array<int, string>  $values
-     * @param  array<int, string>  $allowed
-     */
-    private function matchesAny(array $values, array $allowed): bool
+    private function isCompatibleMime(string $contentType, string $extension, string $mime): bool
     {
-        return collect($values)->contains(fn (string $value): bool => in_array($value, $allowed, true));
+        return match ($contentType) {
+            'pdf' => $mime === 'application/pdf',
+            'image' => str_starts_with($mime, 'image/'),
+            'text' => in_array($mime, ['text/plain', 'text/csv'], true),
+            'office_document' => $this->isOfficeDocumentMime($extension, $mime),
+            default => false,
+        };
     }
 
-    /**
-     * @param  array<int, string>  $values
-     */
-    private function startsWithAny(array $values, string $prefix): bool
+    private function isBlockedMime(string $mime, string $contentType, string $extension, array $blockedMimes): bool
     {
-        return collect($values)->contains(fn (string $value): bool => str_starts_with($value, $prefix));
+        return in_array($mime, $blockedMimes, true)
+            && ! ($contentType === 'office_document' && $this->isOfficeZipContainer($extension, $mime));
+    }
+
+    private function isOfficeDocumentMime(string $extension, string $mime): bool
+    {
+        $allowedMimes = [
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'application/vnd.oasis.opendocument.text',
+            'application/vnd.oasis.opendocument.spreadsheet',
+            'application/vnd.oasis.opendocument.presentation',
+        ];
+
+        return in_array($mime, $allowedMimes, true) || $this->isOfficeZipContainer($extension, $mime);
+    }
+
+    private function isOfficeZipContainer(string $extension, string $mime): bool
+    {
+        return $mime === 'application/zip'
+            && in_array($extension, ['docx', 'xlsx', 'pptx', 'odt', 'ods', 'odp'], true);
     }
 
     private function sanitizeFilename(string $filename): string

@@ -51,7 +51,7 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/private/teacher-content'),
             'visibility' => 'private',
-            'throw' => false,
+            'throw' => true,
             'report' => false,
         ],
 

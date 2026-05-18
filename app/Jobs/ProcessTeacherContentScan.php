@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\TeacherContentItem;
-use App\Services\TeacherContent\TeacherContentScanService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
@@ -15,7 +14,7 @@ final class ProcessTeacherContentScan implements ShouldQueue
 
     public function __construct(public readonly int $teacherContentItemId) {}
 
-    public function handle(TeacherContentScanService $scanService): void
+    public function handle(): void
     {
         $content = TeacherContentItem::query()->find($this->teacherContentItemId);
 
@@ -23,6 +22,6 @@ final class ProcessTeacherContentScan implements ShouldQueue
             return;
         }
 
-        $scanService->markClean($content);
+        // External scanner integration must provide a trusted result before content is marked clean.
     }
 }

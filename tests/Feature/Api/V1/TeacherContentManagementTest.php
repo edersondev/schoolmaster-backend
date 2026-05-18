@@ -70,4 +70,22 @@ final class TeacherContentManagementTest extends TestCase
             ])
             ->assertUnprocessable();
     }
+
+    public function test_content_upload_does_not_persist_metadata_when_private_storage_fails(): void
+    {
+        config(['filesystems.disks.teacher_content.root' => '/dev/null/teacher-content']);
+        $school = School::factory()->create();
+        $teacher = $this->createTeacher($school);
+
+        $this->withToken($this->bearerTokenFor($teacher))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->post('/api/v1/teacher-content', [
+                'title' => 'Unstored',
+                'content_type' => 'pdf',
+                'file' => UploadedFile::fake()->create('lesson.pdf', 10, 'application/pdf'),
+            ])
+            ->assertUnprocessable();
+
+        $this->assertDatabaseCount('teacher_content_items', 0);
+    }
 }
