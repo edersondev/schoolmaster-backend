@@ -32,7 +32,7 @@ trait ValidatesListQuery
 
         if ($allowedSorts !== []) {
             $allowed[] = 'sort';
-            $rules['sort'] = ['sometimes', 'string', Rule::in($this->sortVariants($allowedSorts))];
+            $rules['sort'] = ['sometimes', 'string'];
         }
 
         foreach (array_keys($query) as $field) {
@@ -45,11 +45,29 @@ trait ValidatesListQuery
     }
 
     /**
-     * @param  array<int, string>  $fields
-     * @return array<int, string>
+     * @param  array<int, string>  $allowedSorts
+     * @return array<int, array{field: string, direction: string}>
      */
-    private function sortVariants(array $fields): array
+    private function parseSorts(?string $sort, array $allowedSorts, string $defaultSort): array
     {
-        return array_merge($fields, array_map(fn (string $field): string => '-'.$field, $fields));
+        $sort ??= $defaultSort;
+
+        return collect(explode(',', $sort))
+            ->map(fn (string $field): string => trim($field))
+            ->filter()
+            ->map(function (string $field) use ($allowedSorts): array {
+                $direction = str_starts_with($field, '-') ? 'desc' : 'asc';
+                $field = ltrim($field, '-');
+
+                if (! in_array($field, $allowedSorts, true)) {
+                    throw ValidationException::withMessages([
+                        'sort' => ['The selected sort is invalid.'],
+                    ]);
+                }
+
+                return ['field' => $field, 'direction' => $direction];
+            })
+            ->values()
+            ->all();
     }
 }

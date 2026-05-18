@@ -88,4 +88,46 @@ final class AcademicPeriodManagementTest extends TestCase
             ])
             ->assertUnprocessable();
     }
+
+    public function test_academic_period_list_rejects_cross_tenant_academic_year_filter(): void
+    {
+        $school = School::factory()->create();
+        $otherSchool = School::factory()->create();
+        $token = $this->bearerTokenFor($this->createSchoolAdmin($school));
+        $otherYear = AcademicYear::query()->create([
+            'school_id' => $otherSchool->id,
+            'name' => '2026',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+        ]);
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/academic-periods?academic_year_id='.$otherYear->uuid)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+    }
+
+    public function test_academic_period_rejects_non_contract_date_format(): void
+    {
+        $school = School::factory()->create();
+        $token = $this->bearerTokenFor($this->createSchoolAdmin($school));
+        $year = AcademicYear::query()->create([
+            'school_id' => $school->id,
+            'name' => '2026',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+        ]);
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson('/api/v1/academic-periods', [
+                'academic_year_id' => $year->uuid,
+                'name' => 'Invalid Term',
+                'sequence' => 1,
+                'start_date' => 'January 1 2026',
+                'end_date' => 'March 31 2026',
+            ])
+            ->assertUnprocessable();
+    }
 }

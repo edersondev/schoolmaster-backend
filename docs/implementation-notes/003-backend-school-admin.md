@@ -58,7 +58,7 @@ New school-owned tables use `school_id` as the tenant column:
 - `find app database tests routes bootstrap -name '*.php' -print0 | xargs -0 -n1 php -l`:
   passed.
 - `./vendor/bin/pint --test`: passed.
-- `docker compose run --rm app php artisan test`: 39 passed, 206 assertions.
+- `docker compose run --rm app php artisan test`: 43 passed, 216 assertions.
 
 Host `php artisan test` is not usable in this environment because the local PHP
 runtime has PDO but no database drivers. The Docker test runtime provides

@@ -49,4 +49,19 @@ final class AcademicYearManagementTest extends TestCase
             ])
             ->assertUnprocessable();
     }
+
+    public function test_academic_year_rejects_non_contract_date_format(): void
+    {
+        $school = School::factory()->create();
+        $token = $this->bearerTokenFor($this->createSchoolAdmin($school));
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson('/api/v1/academic-years', [
+                'name' => 'Invalid',
+                'start_date' => 'January 1 2026',
+                'end_date' => 'December 31 2026',
+            ])
+            ->assertUnprocessable();
+    }
 }

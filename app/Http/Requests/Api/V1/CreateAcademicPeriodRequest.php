@@ -14,8 +14,8 @@ final class CreateAcademicPeriodRequest extends ApiFormRequest
             'academic_year_id' => ['required', 'uuid'],
             'name' => ['required', 'string', 'max:255'],
             'sequence' => ['required', 'integer', 'min:1'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after:start_date'],
+            'start_date' => ['required', 'date_format:Y-m-d'],
+            'end_date' => ['required', 'date_format:Y-m-d', 'after:start_date'],
         ];
     }
 }

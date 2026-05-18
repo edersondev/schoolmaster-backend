@@ -13,6 +13,7 @@ use App\Services\Concerns\AuthorizesSchoolAdministration;
 use App\Services\Concerns\ValidatesListQuery;
 use App\Services\TenantContextService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 final class AcademicPeriodService
@@ -32,9 +33,7 @@ final class AcademicPeriodService
             ->with(['school', 'academicYear'])
             ->where('school_id', $school->id)
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-            ->when($filters['academic_year_id'] ?? null, function ($query, string $academicYearUuid): void {
-                $query->whereHas('academicYear', fn ($yearQuery) => $yearQuery->where('uuid', $academicYearUuid));
-            })
+            ->when($filters['academic_year_id'] ?? null, fn ($query, string $academicYearUuid) => $query->where('academic_year_id', $this->resolveAcademicYearId($academicYearUuid, $school->id)))
             ->orderBy('sequence')
             ->paginate((int) ($filters['per_page'] ?? 25));
     }
@@ -78,12 +77,31 @@ final class AcademicPeriodService
 
     private function assertDateRange(AcademicYear $academicYear, CreateAcademicPeriodData $data): void
     {
-        if ($data->startDate < $academicYear->start_date->toDateString() || $data->endDate > $academicYear->end_date->toDateString()) {
+        $periodStart = Carbon::createFromFormat('Y-m-d', $data->startDate)->startOfDay();
+        $periodEnd = Carbon::createFromFormat('Y-m-d', $data->endDate)->startOfDay();
+
+        if ($periodStart->lt($academicYear->start_date) || $periodEnd->gt($academicYear->end_date)) {
             throw ValidationException::withMessages([
                 'start_date' => ['The period date range must fit within the academic year.'],
                 'end_date' => ['The period date range must fit within the academic year.'],
             ]);
         }
+    }
+
+    private function resolveAcademicYearId(string $academicYearUuid, int $schoolId): int
+    {
+        $academicYear = AcademicYear::query()
+            ->where('uuid', $academicYearUuid)
+            ->where('school_id', $schoolId)
+            ->first();
+
+        if ($academicYear === null) {
+            throw ValidationException::withMessages([
+                'academic_year_id' => ['The academic year was not found in the resolved school.'],
+            ]);
+        }
+
+        return $academicYear->id;
     }
 
     /**

@@ -38,7 +38,7 @@ final class UserService
                 ->with(['roles.permissions', 'roles.school', 'school'])
                 ->whereNull('school_id')
                 ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-                ->orderBy($this->sortField($filters), $this->sortDirection($filters))
+                ->tap(fn ($query) => $this->applySorts($query, $filters))
                 ->paginate((int) ($filters['per_page'] ?? 25));
         }
 
@@ -49,7 +49,7 @@ final class UserService
             ->with(['roles.permissions', 'roles.school', 'school'])
             ->where('school_id', $school->id)
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-            ->orderBy($this->sortField($filters), $this->sortDirection($filters))
+            ->tap(fn ($query) => $this->applySorts($query, $filters))
             ->paginate((int) ($filters['per_page'] ?? 25));
     }
 
@@ -108,16 +108,12 @@ final class UserService
     /**
      * @param  array<string, mixed>  $filters
      */
-    private function sortField(array $filters): string
+    private function applySorts($query, array $filters): void
     {
-        return ltrim((string) ($filters['sort'] ?? 'full_name'), '-');
-    }
+        foreach ($this->parseSorts($filters['sort'] ?? null, ['full_name', 'email', 'created_at'], 'full_name') as $sort) {
+            $query->orderBy($sort['field'], $sort['direction']);
+        }
 
-    /**
-     * @param  array<string, mixed>  $filters
-     */
-    private function sortDirection(array $filters): string
-    {
-        return str_starts_with((string) ($filters['sort'] ?? ''), '-') ? 'desc' : 'asc';
+        $query->orderBy('id');
     }
 }

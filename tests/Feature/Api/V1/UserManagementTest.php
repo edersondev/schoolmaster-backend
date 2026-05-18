@@ -68,4 +68,16 @@ final class UserManagementTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['data', 'meta' => ['page', 'per_page', 'total']]);
     }
+
+    public function test_user_listing_accepts_documented_comma_separated_sort(): void
+    {
+        $school = School::factory()->create();
+        $token = $this->bearerTokenFor($this->createSchoolAdmin($school));
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/users?sort=full_name,-email')
+            ->assertOk()
+            ->assertJsonStructure(['data', 'meta' => ['page', 'per_page', 'total']]);
+    }
 }
