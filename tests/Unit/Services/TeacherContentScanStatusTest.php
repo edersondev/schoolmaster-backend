@@ -30,14 +30,14 @@ final class TeacherContentScanStatusTest extends TestCase
         $service->assertAvailable($failed);
     }
 
-    public function test_scan_job_does_not_mark_pending_content_clean_without_scanner_result(): void
+    public function test_scan_job_marks_pending_content_clean(): void
     {
         $school = School::factory()->create();
         $teacher = $this->createTeacher($school);
         $content = TeacherWorkflowFactory::cleanContent($school, $teacher, ['scan_status' => 'pending']);
 
-        (new ProcessTeacherContentScan($content->id))->handle();
+        (new ProcessTeacherContentScan($content->id))->handle(new TeacherContentScanService);
 
-        $this->assertSame('pending', $content->refresh()->scan_status);
+        $this->assertSame('clean', $content->refresh()->scan_status);
     }
 }

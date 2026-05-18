@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
+use App\Jobs\ProcessTeacherContentScan;
 use App\Models\School;
 use Database\Factories\TeacherWorkflowFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -17,6 +19,7 @@ final class TeacherContentManagementTest extends TestCase
 
     public function test_teacher_can_upload_and_list_content_in_resolved_school(): void
     {
+        Queue::fake();
         Storage::fake('teacher_content');
         $school = School::factory()->create();
         $otherSchool = School::factory()->create();
@@ -34,6 +37,8 @@ final class TeacherContentManagementTest extends TestCase
             ->assertJsonPath('data.title', 'Lesson PDF')
             ->assertJsonPath('data.scan_status', 'pending')
             ->json('data');
+
+        Queue::assertPushed(ProcessTeacherContentScan::class);
 
         $this->withToken($this->bearerTokenFor($teacher))
             ->withHeader('X-School-Id', $school->uuid)

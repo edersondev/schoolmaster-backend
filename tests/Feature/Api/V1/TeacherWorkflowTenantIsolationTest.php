@@ -12,7 +12,7 @@ final class TeacherWorkflowTenantIsolationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_missing_mismatched_inactive_and_unauthorized_school_contexts_are_rejected(): void
+    public function test_tenant_context_failures_and_missing_permissions_are_rejected(): void
     {
         $school = School::factory()->create();
         $otherSchool = School::factory()->create();
@@ -41,6 +41,6 @@ final class TeacherWorkflowTenantIsolationTest extends TestCase
             ->withHeader('X-School-Id', $school->uuid)
             ->getJson('/api/v1/teacher-content')
             ->assertForbidden()
-            ->assertJsonPath('error.code', 'tenant_mismatch');
+            ->assertJsonPath('error.code', 'forbidden');
     }
 }

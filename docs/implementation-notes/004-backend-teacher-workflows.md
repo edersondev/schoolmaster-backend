@@ -63,5 +63,5 @@ Teacher content uploads initialize with `scan_status = pending`. Content can be 
 - Style: PASS (`./vendor/bin/pint --test`)
 - OpenAPI: PASS (`npx @redocly/cli lint aggregate@v1 schoolmaster-platform@v1`)
 - Focused non-DB unit tests: PASS (`php artisan test tests/Unit/Services/TeacherContentUploadValidationTest.php tests/Unit/Services/QuestionnaireValidationTest.php`)
-- Full Docker PHPUnit suite: PASS (`docker compose exec -T app php artisan test`) - 71 passed, 368 assertions.
+- Full Docker PHPUnit suite: PASS (`docker compose exec -T app php artisan test`) - 71 passed, 369 assertions.
 - Host PHPUnit suite: BLOCKED in this runtime. `php artisan test` fails before DB-backed tests run because PHP has `PDO` only and no `pdo_mysql` or `pdo_sqlite` driver loaded. The configured test database is MySQL (`DB_CONNECTION=mysql` in `phpunit.xml`).

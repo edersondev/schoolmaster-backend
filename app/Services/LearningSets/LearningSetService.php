@@ -34,7 +34,14 @@ final class LearningSetService
         $this->assertTeacherWorkflowPermission($actor, $school, 'learning_sets.view');
 
         return LearningSet::query()
-            ->with(['school', 'owner', 'academicPeriod', 'entries', 'assignments.studentProfile'])
+            ->with([
+                'school',
+                'owner',
+                'academicPeriod',
+                'entries.contentItem',
+                'entries.questionnaire',
+                'assignments.studentProfile',
+            ])
             ->where('school_id', $school->id)
             ->orderByDesc('created_at')
             ->paginate((int) ($filters['per_page'] ?? 25));
@@ -76,7 +83,14 @@ final class LearningSetService
                 ]);
             }
 
-            return $learningSet->load(['school', 'owner', 'academicPeriod', 'entries', 'assignments.studentProfile']);
+            return $learningSet->load([
+                'school',
+                'owner',
+                'academicPeriod',
+                'entries.contentItem',
+                'entries.questionnaire',
+                'assignments.studentProfile',
+            ]);
         });
     }
 

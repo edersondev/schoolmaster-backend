@@ -32,4 +32,14 @@ final class LearningSetEntry extends Model
     {
         return $this->belongsTo(LearningSet::class);
     }
+
+    public function contentItem(): BelongsTo
+    {
+        return $this->belongsTo(TeacherContentItem::class, 'entry_reference_id');
+    }
+
+    public function questionnaire(): BelongsTo
+    {
+        return $this->belongsTo(Questionnaire::class, 'entry_reference_id');
+    }
 }

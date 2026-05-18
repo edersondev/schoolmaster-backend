@@ -6,6 +6,7 @@ namespace App\Services\TeacherContent;
 
 use App\DTOs\TeacherContent\CreateTeacherContentData;
 use App\DTOs\TenantContext;
+use App\Jobs\ProcessTeacherContentScan;
 use App\Models\TeacherContentFolder;
 use App\Models\TeacherContentItem;
 use App\Models\User;
@@ -72,7 +73,7 @@ final class TeacherContentService
         }
 
         try {
-            return DB::transaction(function () use ($actor, $data, $fileData, $folder, $path, $school, $uuid): TeacherContentItem {
+            $content = DB::transaction(function () use ($actor, $data, $fileData, $folder, $path, $school, $uuid): TeacherContentItem {
                 return TeacherContentItem::query()->create([
                     'uuid' => $uuid,
                     'school_id' => $school->id,
@@ -93,6 +94,10 @@ final class TeacherContentService
 
             throw $exception;
         }
+
+        ProcessTeacherContentScan::dispatch($content->id);
+
+        return $content;
     }
 
     private function resolveFolder(?string $folderUuid, int $schoolId): ?TeacherContentFolder

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\Models\Questionnaire;
-use App\Models\TeacherContentItem;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,10 +20,10 @@ final class LearningSetEntryResource extends JsonResource
 
     private function referenceUuid(): ?string
     {
-        $model = $this->entry_type === 'content_item'
-            ? TeacherContentItem::query()->find($this->entry_reference_id)
-            : Questionnaire::query()->find($this->entry_reference_id);
+        if ($this->entry_type === 'content_item') {
+            return $this->relationLoaded('contentItem') ? $this->contentItem?->uuid : null;
+        }
 
-        return $model?->uuid;
+        return $this->relationLoaded('questionnaire') ? $this->questionnaire?->uuid : null;
     }
 }

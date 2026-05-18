@@ -2,6 +2,7 @@
 
 use App\Exceptions\AuthLockoutException;
 use App\Exceptions\InactiveRecordException;
+use App\Exceptions\PermissionDeniedException;
 use App\Exceptions\TenantContextException;
 use App\Exceptions\TokenRejectedException;
 use App\Http\Middleware\AuthenticateBearerToken;
@@ -40,6 +41,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (AuthorizationException $exception) {
+            return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
+        });
+
+        $exceptions->render(function (PermissionDeniedException $exception) {
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
         });
 
