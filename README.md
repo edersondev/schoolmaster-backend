@@ -4,9 +4,16 @@ Laravel API backend for the SchoolMaster SaaS platform.
 
 ## Source Of Truth
 
-The `specs/` submodule is authoritative for product behavior, API contracts,
-business rules, architecture decisions, and implementation sequencing. Before
-changing backend behavior, read:
+The SchoolMaster specs repository is authoritative for product behavior, API
+contracts, business rules, architecture decisions, and implementation
+sequencing.
+
+Specs repository:
+
+- https://github.com/edersondev/schoolmaster-specs
+
+In local development, this backend repo may expose that repository through a
+`specs/` symlink. Before changing backend behavior, read:
 
 1. `specs/AGENTS.md`
 2. Relevant files under `specs/specs`
@@ -14,8 +21,9 @@ changing backend behavior, read:
 4. Relevant files under `specs/docs`
 5. Relevant files under `specs/decisions`
 
-If backend code conflicts with `specs/`, update the specs and OpenAPI contract
-first. Backend implementation follows documented contracts only.
+If backend code conflicts with the specs repository, update the specs and
+OpenAPI contract first. Backend implementation follows documented contracts
+only.
 
 ## Local Setup
 
