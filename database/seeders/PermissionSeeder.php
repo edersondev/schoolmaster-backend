@@ -38,6 +38,16 @@ final class PermissionSeeder extends Seeder
             ['code' => 'academic_periods.manage', 'name' => 'Manage academic periods', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'guardians.view', 'name' => 'View guardians', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'guardians.manage', 'name' => 'Manage guardians', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'teacher_content.view', 'name' => 'View teacher content', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'teacher_content.manage', 'name' => 'Manage teacher content', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'questionnaires.view', 'name' => 'View questionnaires', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'questionnaires.manage', 'name' => 'Manage questionnaires', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'learning_sets.view', 'name' => 'View learning sets', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'learning_sets.manage', 'name' => 'Manage learning sets', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'grades.view', 'name' => 'View grades', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'grades.manage', 'name' => 'Manage grades', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'attendance.view', 'name' => 'View attendance', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'attendance.manage', 'name' => 'Manage attendance', 'scope' => 'school', 'status' => 'active'],
         ];
     }
 }

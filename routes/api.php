@@ -2,11 +2,16 @@
 
 use App\Http\Controllers\Api\V1\AcademicPeriodController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\GradeController;
 use App\Http\Controllers\Api\V1\GuardianController;
+use App\Http\Controllers\Api\V1\LearningSetController;
 use App\Http\Controllers\Api\V1\PermissionController;
+use App\Http\Controllers\Api\V1\QuestionnaireController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SchoolController;
+use App\Http\Controllers\Api\V1\TeacherContentController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +45,21 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('/guardians', [GuardianController::class, 'index'])->name('api.v1.guardians.index');
             Route::post('/guardians', [GuardianController::class, 'store'])->name('api.v1.guardians.store');
+
+            Route::get('/teacher-content', [TeacherContentController::class, 'index'])->name('api.v1.teacher-content.index');
+            Route::post('/teacher-content', [TeacherContentController::class, 'store'])->name('api.v1.teacher-content.store');
+
+            Route::get('/questionnaires', [QuestionnaireController::class, 'index'])->name('api.v1.questionnaires.index');
+            Route::post('/questionnaires', [QuestionnaireController::class, 'store'])->name('api.v1.questionnaires.store');
+
+            Route::get('/learning-sets', [LearningSetController::class, 'index'])->name('api.v1.learning-sets.index');
+            Route::post('/learning-sets', [LearningSetController::class, 'store'])->name('api.v1.learning-sets.store');
+
+            Route::get('/grades', [GradeController::class, 'index'])->name('api.v1.grades.index');
+            Route::post('/grades', [GradeController::class, 'store'])->name('api.v1.grades.store');
+
+            Route::get('/attendance', [AttendanceController::class, 'index'])->name('api.v1.attendance.index');
+            Route::post('/attendance', [AttendanceController::class, 'store'])->name('api.v1.attendance.store');
         });
     });
 });

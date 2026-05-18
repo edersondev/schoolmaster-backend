@@ -83,6 +83,46 @@ abstract class TestCase extends BaseTestCase
         return $user->refresh()->load('roles.permissions');
     }
 
+    protected function createTeacher(School $school, array $permissions = [
+        'teacher_content.view',
+        'teacher_content.manage',
+        'questionnaires.view',
+        'questionnaires.manage',
+        'learning_sets.view',
+        'learning_sets.manage',
+        'grades.view',
+        'grades.manage',
+        'attendance.view',
+        'attendance.manage',
+    ]): User
+    {
+        $user = User::factory()->create([
+            'school_id' => $school->id,
+            'email' => fake()->unique()->safeEmail(),
+            'password' => Hash::make('password'),
+            'status' => 'active',
+        ]);
+
+        $role = Role::query()->create([
+            'school_id' => $school->id,
+            'scope' => 'school',
+            'name' => 'Test Teacher',
+        ]);
+
+        foreach ($permissions as $permission) {
+            $role->permissions()->attach(Permission::query()->firstOrCreate([
+                'code' => $permission,
+            ], [
+                'name' => str_replace('.', ' ', $permission),
+                'scope' => 'school',
+            ]));
+        }
+
+        $user->roles()->attach($role);
+
+        return $user->refresh()->load('roles.permissions');
+    }
+
     protected function bearerTokenFor(User $user): string
     {
         [$token] = app(AuthTokenLifecycleService::class)->issue($user);
