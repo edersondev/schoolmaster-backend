@@ -118,6 +118,6 @@ Do not start with implementation when the specs or OpenAPI contract are missing 
 For additional implementation context, read the current plan in the `/specs`
 directory before making substantial changes.
 
-Current school administration implementation context:
-`specs/specs/003-backend-school-admin/quickstart.md`.
+Current teacher workflow implementation context:
+`specs/specs/004-backend-teacher-workflows/quickstart.md`.
 <!-- SPECKIT END -->
