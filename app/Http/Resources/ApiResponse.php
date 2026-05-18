@@ -23,12 +23,9 @@ final class ApiResponse
     public static function paginated(LengthAwarePaginator $paginator, mixed $data): JsonResponse
     {
         return self::success($data, [
-            'pagination' => [
-                'current_page' => $paginator->currentPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'last_page' => $paginator->lastPage(),
-            ],
+            'page' => $paginator->currentPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
         ]);
     }
 
@@ -67,6 +64,11 @@ final class ApiResponse
     public static function tenantMismatch(string $message = 'Tenant context is missing, inactive, or outside permitted scope.'): JsonResponse
     {
         return self::error('tenant_mismatch', $message, [], 403);
+    }
+
+    public static function inactiveRecord(string $message = 'Resource is inactive for this workflow.'): JsonResponse
+    {
+        return self::error('inactive_record', $message, [], 409);
     }
 
     public static function lockout(int $retryAfterSeconds): JsonResponse

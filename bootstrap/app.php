@@ -1,9 +1,11 @@
 <?php
 
 use App\Exceptions\AuthLockoutException;
+use App\Exceptions\InactiveRecordException;
 use App\Exceptions\TenantContextException;
 use App\Exceptions\TokenRejectedException;
 use App\Http\Middleware\AuthenticateBearerToken;
+use App\Http\Middleware\ResolveSchoolContext;
 use App\Http\Resources\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -25,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'schoolmaster.auth' => AuthenticateBearerToken::class,
+            'schoolmaster.school_context' => ResolveSchoolContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -42,6 +45,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (TenantContextException $exception) {
             return ApiResponse::tenantMismatch($exception->getMessage());
+        });
+
+        $exceptions->render(function (InactiveRecordException $exception) {
+            return ApiResponse::inactiveRecord($exception->getMessage());
         });
 
         $exceptions->render(function (AuthLockoutException $exception) {

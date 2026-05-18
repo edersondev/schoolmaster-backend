@@ -20,7 +20,7 @@ final class SchoolManagementApiTest extends TestCase
 
         $this->withToken($token)->getJson('/api/v1/schools')
             ->assertOk()
-            ->assertJsonStructure(['data', 'meta' => ['pagination']]);
+            ->assertJsonStructure(['data', 'meta' => ['page', 'per_page', 'total']]);
 
         $created = $this->withToken($token)->postJson('/api/v1/schools', [
             'name' => 'North School',
