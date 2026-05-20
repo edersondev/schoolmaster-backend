@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
+use App\Jobs\GenerateReportRunOutputs;
 use App\Models\AcademicPeriod;
 use App\Models\AcademicYear;
 use App\Models\School;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 final class ReportRequestTest extends TestCase
@@ -16,6 +18,7 @@ final class ReportRequestTest extends TestCase
 
     public function test_school_admin_requests_async_report(): void
     {
+        Queue::fake();
         [$school, $admin, $period] = $this->context();
 
         $this->withToken($this->bearerTokenFor($admin))
@@ -27,6 +30,8 @@ final class ReportRequestTest extends TestCase
             ->assertAccepted()
             ->assertJsonPath('data.status', 'requested')
             ->assertJsonPath('data.outputs_available', false);
+
+        Queue::assertPushed(GenerateReportRunOutputs::class);
     }
 
     private function context(): array

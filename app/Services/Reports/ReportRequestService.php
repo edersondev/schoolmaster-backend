@@ -6,6 +6,7 @@ namespace App\Services\Reports;
 
 use App\DTOs\Reports\RequestReportData;
 use App\DTOs\TenantContext;
+use App\Jobs\GenerateReportRunOutputs;
 use App\Models\ReportRun;
 use App\Models\User;
 use App\Services\Concerns\AuthorizesSchoolReports;
@@ -38,6 +39,8 @@ final class ReportRequestService
             'status' => 'requested',
             'outputs_available' => false,
         ])->load(['school', 'requester']);
+
+        GenerateReportRunOutputs::dispatch($run->id)->onQueue(config('queue.report_queue'));
 
         return $run;
     }
