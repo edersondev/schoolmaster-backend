@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'school_id', 'learning_set_id', 'entry_type', 'entry_reference_id', 'sequence'])]
+#[Fillable(['uuid', 'school_id', 'learning_set_id', 'entry_type', 'entry_reference_id', 'sequence', 'title'])]
 final class LearningSetEntry extends Model
 {
     use BelongsToSchool, HasFactory;
@@ -41,5 +41,18 @@ final class LearningSetEntry extends Model
     public function questionnaire(): BelongsTo
     {
         return $this->belongsTo(Questionnaire::class, 'entry_reference_id');
+    }
+
+    public function resolvedTitle(): string
+    {
+        if ($this->entry_type === 'content_item' && $this->relationLoaded('contentItem')) {
+            return $this->contentItem?->title ?? '';
+        }
+
+        if ($this->entry_type === 'questionnaire' && $this->relationLoaded('questionnaire')) {
+            return $this->questionnaire?->title ?? '';
+        }
+
+        return (string) ($this->getAttribute('title') ?? '');
     }
 }

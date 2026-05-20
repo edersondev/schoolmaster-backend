@@ -55,6 +55,14 @@ return [
             'report' => false,
         ],
 
+        'report_outputs' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/report-outputs'),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

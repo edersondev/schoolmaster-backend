@@ -51,4 +51,9 @@ final class LearningSet extends Model
     {
         return $this->hasMany(LearningSetAssignment::class);
     }
+
+    public function isPublished(): bool
+    {
+        return $this->status === 'published';
+    }
 }

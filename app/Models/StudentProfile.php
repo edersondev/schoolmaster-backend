@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 #[Fillable(['uuid', 'school_id', 'user_id', 'registration_number', 'status', 'current_academic_year_id'])]
@@ -38,5 +39,25 @@ final class StudentProfile extends Model
     public function guardians(): BelongsToMany
     {
         return $this->belongsToMany(Guardian::class);
+    }
+
+    public function learningSetAssignments(): HasMany
+    {
+        return $this->hasMany(LearningSetAssignment::class);
+    }
+
+    public function gradeRecords(): HasMany
+    {
+        return $this->hasMany(GradeRecord::class);
+    }
+
+    public function attendanceRecords(): HasMany
+    {
+        return $this->hasMany(AttendanceRecord::class);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
     }
 }

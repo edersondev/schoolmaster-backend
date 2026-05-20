@@ -9,8 +9,13 @@ use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearningSetController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\QuestionnaireController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\SchoolController;
+use App\Http\Controllers\Api\V1\StudentAttendanceController;
+use App\Http\Controllers\Api\V1\StudentGradeController;
+use App\Http\Controllers\Api\V1\StudentLearningSetController;
+use App\Http\Controllers\Api\V1\StudentTeacherContentController;
 use App\Http\Controllers\Api\V1\TeacherContentController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
@@ -60,6 +65,19 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('/attendance', [AttendanceController::class, 'index'])->name('api.v1.attendance.index');
             Route::post('/attendance', [AttendanceController::class, 'store'])->name('api.v1.attendance.store');
+
+            Route::prefix('student')->name('api.v1.student.')->group(function (): void {
+                Route::get('/learning-sets', [StudentLearningSetController::class, 'index'])->name('learning-sets.index');
+                Route::get('/grades', [StudentGradeController::class, 'index'])->name('grades.index');
+                Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance.index');
+                Route::get('/teacher-content/{contentItemId}/download', [StudentTeacherContentController::class, 'download'])->name('teacher-content.download');
+            });
+
+            Route::prefix('reports')->name('api.v1.reports.')->group(function (): void {
+                Route::get('/', [ReportController::class, 'index'])->name('index');
+                Route::post('/', [ReportController::class, 'store'])->name('store');
+                Route::get('/{reportRunId}/download', [ReportController::class, 'download'])->name('download');
+            });
         });
     });
 });

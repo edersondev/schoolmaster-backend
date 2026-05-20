@@ -2,6 +2,7 @@
 
 use App\Exceptions\AuthLockoutException;
 use App\Exceptions\InactiveRecordException;
+use App\Exceptions\OutputExpiredException;
 use App\Exceptions\PermissionDeniedException;
 use App\Exceptions\TenantContextException;
 use App\Exceptions\TokenRejectedException;
@@ -46,6 +47,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (PermissionDeniedException $exception) {
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
+        });
+
+        $exceptions->render(function (OutputExpiredException $exception) {
+            return ApiResponse::outputExpired($exception->getMessage());
         });
 
         $exceptions->render(function (TenantContextException $exception) {
