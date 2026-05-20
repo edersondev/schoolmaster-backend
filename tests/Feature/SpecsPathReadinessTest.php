@@ -6,7 +6,7 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 
-final class SpecsSubmoduleReadinessTest extends TestCase
+final class SpecsPathReadinessTest extends TestCase
 {
     public function test_required_specs_source_files_are_available(): void
     {

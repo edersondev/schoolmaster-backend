@@ -4,7 +4,7 @@
 
 This repository is the Laravel API backend for the SchoolMaster SaaS platform.
 
-The `/specs` git submodule is the source of truth for:
+The `/specs` directory is the source of truth for:
 - product specifications
 - business rules
 - API contracts
@@ -108,7 +108,7 @@ Do not start with implementation when the specs or OpenAPI contract are missing 
 
 ## Practical Constraints For Agents
 
-- Respect the specs submodule as the source of truth.
+- Respect the specs directory as the source of truth.
 - Do not refactor unrelated code.
 - Do not introduce frontend-only concerns into the backend repository.
 - Do not create product UI artifacts in this repository.
@@ -116,8 +116,8 @@ Do not start with implementation when the specs or OpenAPI contract are missing 
 
 <!-- SPECKIT START -->
 For additional implementation context, read the current plan in the `/specs`
-submodule before making substantial changes.
+directory before making substantial changes.
 
-Current school administration implementation context:
-`specs/specs/003-backend-school-admin/quickstart.md`.
+Current teacher workflow implementation context:
+`specs/specs/004-backend-teacher-workflows/quickstart.md`.
 <!-- SPECKIT END -->
