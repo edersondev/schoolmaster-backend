@@ -48,6 +48,9 @@ final class PermissionSeeder extends Seeder
             ['code' => 'grades.manage', 'name' => 'Manage grades', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'attendance.view', 'name' => 'View attendance', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'attendance.manage', 'name' => 'Manage attendance', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'student_self_view.view', 'name' => 'View own student records', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'reports.view', 'name' => 'View school reports', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'reports.request', 'name' => 'Request school reports', 'scope' => 'school', 'status' => 'active'],
         ];
     }
 }

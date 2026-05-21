@@ -91,4 +91,9 @@ final class ApiResponse
     {
         return self::error('not_found', $message, [], 404);
     }
+
+    public static function outputExpired(string $message = 'Generated report output file has expired; request a new ReportRun.'): JsonResponse
+    {
+        return self::error('output_expired', $message, [], 410);
+    }
 }

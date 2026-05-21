@@ -23,7 +23,6 @@ final class TeacherWorkflowBlockedOperationsTest extends TestCase
             ['patchJson', '/api/v1/teacher-content/'.fake()->uuid()],
             ['getJson', '/api/v1/teacher-content/'.fake()->uuid().'/download'],
             ['patchJson', '/api/v1/questionnaires/'.fake()->uuid()],
-            ['getJson', '/api/v1/reports'],
             ['getJson', '/api/v1/classrooms'],
         ] as [$method, $path]) {
             $this->withToken($token)

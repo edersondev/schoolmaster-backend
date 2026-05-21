@@ -39,4 +39,9 @@ final class LearningSetAssignment extends Model
     {
         return $this->belongsTo(StudentProfile::class);
     }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
 }
