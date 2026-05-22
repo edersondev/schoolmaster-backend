@@ -2,6 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\EnrollmentHistory;
+use App\Models\StudentProfile;
+use App\Models\StudentTransfer;
+use App\Policies\EnrollmentHistoryPolicy;
+use App\Policies\StudentProfilePolicy;
+use App\Policies\StudentTransferPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::policy(StudentProfile::class, StudentProfilePolicy::class);
+        Gate::policy(EnrollmentHistory::class, EnrollmentHistoryPolicy::class);
+        Gate::policy(StudentTransfer::class, StudentTransferPolicy::class);
     }
 }

@@ -1,12 +1,14 @@
 <?php
 
 use App\Exceptions\AuthLockoutException;
+use App\Exceptions\ConflictException;
 use App\Exceptions\InactiveRecordException;
 use App\Exceptions\OutputExpiredException;
 use App\Exceptions\PermissionDeniedException;
 use App\Exceptions\TenantContextException;
 use App\Exceptions\TokenRejectedException;
 use App\Http\Middleware\AuthenticateBearerToken;
+use App\Http\Middleware\RequireExplicitSchoolContext;
 use App\Http\Middleware\ResolveSchoolContext;
 use App\Http\Resources\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -30,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'schoolmaster.auth' => AuthenticateBearerToken::class,
             'schoolmaster.school_context' => ResolveSchoolContext::class,
+            'schoolmaster.explicit_school_context' => RequireExplicitSchoolContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
@@ -51,6 +54,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (OutputExpiredException $exception) {
             return ApiResponse::outputExpired($exception->getMessage());
+        });
+
+        $exceptions->render(function (ConflictException $exception) {
+            return ApiResponse::error('conflict', $exception->getMessage(), [], 409);
         });
 
         $exceptions->render(function (TenantContextException $exception) {

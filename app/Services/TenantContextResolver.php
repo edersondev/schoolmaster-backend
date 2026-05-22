@@ -25,7 +25,11 @@ final class TenantContextResolver
                 throw new TenantContextException('Tenant context is outside permitted scope.');
             }
 
-            return new TenantContext($user->school, 'authenticated_session', 'resolved');
+            return new TenantContext(
+                $user->school,
+                $headerSchoolId === null ? 'authenticated_session' : 'x-school-id',
+                'resolved',
+            );
         }
 
         if ($headerSchoolId === null) {

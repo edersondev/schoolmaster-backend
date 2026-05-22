@@ -26,6 +26,9 @@ final class Guardian extends Model
 
     public function studentProfiles(): BelongsToMany
     {
-        return $this->belongsToMany(StudentProfile::class);
+        return $this->belongsToMany(StudentProfile::class)
+            ->using(GuardianAssociation::class)
+            ->withPivot(['uuid', 'school_id', 'relationship_type', 'status'])
+            ->withTimestamps();
     }
 }
