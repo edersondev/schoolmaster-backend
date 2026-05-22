@@ -39,7 +39,8 @@ final class StudentProfileCreateTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.school_id', $school->uuid)
             ->assertJsonPath('data.registration_number', 'STU-001')
-            ->assertJsonPath('data.status', 'active');
+            ->assertJsonPath('data.status', 'active')
+            ->assertJsonPath('data.guardian_associations.0.relationship_type', 'mother');
 
         $profileId = $response->json('data.id');
 

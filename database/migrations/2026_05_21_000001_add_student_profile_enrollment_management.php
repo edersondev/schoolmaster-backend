@@ -19,6 +19,7 @@ return new class extends Migration
             $table->date('status_effective_at')->nullable()->after('enrolled_at');
             $table->softDeletes();
 
+            $table->unique('user_id', 'student_profiles_user_unique');
             $table->unique(['school_id', 'registration_number'], 'student_profiles_school_registration_unique');
             $table->index(['school_id', 'registration_number'], 'student_profiles_school_registration_index');
         });
@@ -81,6 +82,7 @@ return new class extends Migration
 
         Schema::table('student_profiles', function (Blueprint $table): void {
             $table->foreignId('user_id')->nullable(false)->change();
+            $table->dropUnique('student_profiles_user_unique');
             $table->dropUnique('student_profiles_school_registration_unique');
             $table->dropIndex('student_profiles_school_registration_index');
             $table->dropColumn([

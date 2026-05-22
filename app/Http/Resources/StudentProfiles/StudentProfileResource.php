@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Resources\StudentProfiles;
 
-use App\Http\Resources\Api\V1\GuardianResource;
 use Illuminate\Http\Request;
 
 final class StudentProfileResource extends StudentProfileSummaryResource
@@ -17,7 +16,7 @@ final class StudentProfileResource extends StudentProfileSummaryResource
             'contact_phone' => $this->contact_phone,
             'current_academic_year_id' => $this->currentAcademicYear?->uuid,
             'guardian_associations' => $this->resource->relationLoaded('guardians')
-                ? GuardianResource::collection($this->guardians)->resolve()
+                ? StudentGuardianAssociationResource::collection($this->guardians)->resolve()
                 : [],
             'enrollment_history' => $this->resource->relationLoaded('enrollmentHistories')
                 ? EnrollmentHistoryResource::collection($this->enrollmentHistories)->resolve()

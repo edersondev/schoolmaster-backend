@@ -21,8 +21,9 @@ final class StudentProfileValidationTest extends TestCase
         $otherSchool = School::factory()->create();
         $admin = $this->createSchoolAdmin($school, ['student_profiles.view', 'student_profiles.manage']);
         $token = $this->bearerTokenFor($admin);
+        $existingStudent = User::factory()->create(['school_id' => $school->id]);
 
-        StudentEnrollmentFactory::profile($school, User::factory()->create(['school_id' => $school->id]), [
+        StudentEnrollmentFactory::profile($school, $existingStudent, [
             'registration_number' => 'STU-005',
         ]);
         $guardian = Guardian::query()->create([
@@ -33,6 +34,7 @@ final class StudentProfileValidationTest extends TestCase
         ]);
 
         $payload = [
+            'user_id' => $existingStudent->uuid,
             'registration_number' => 'STU-005',
             'first_name' => 'Aline',
             'last_name' => 'Silva',

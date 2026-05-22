@@ -52,7 +52,7 @@ Route::prefix('v1')->group(function (): void {
             Route::get('/guardians', [GuardianController::class, 'index'])->name('api.v1.guardians.index');
             Route::post('/guardians', [GuardianController::class, 'store'])->name('api.v1.guardians.store');
 
-            Route::prefix('student-profiles')->middleware('schoolmaster.explicit_school_context')->name('api.v1.student-profiles.')->group(function (): void {
+            Route::prefix('student-profiles')->name('api.v1.student-profiles.')->group(function (): void {
                 Route::get('/', [StudentProfileController::class, 'index'])->name('index');
                 Route::post('/', [StudentProfileController::class, 'store'])->name('store');
                 Route::patch('/{studentProfileId}/status', [StudentProfileController::class, 'updateStatus'])->whereUuid('studentProfileId')->name('status.update');

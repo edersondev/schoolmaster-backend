@@ -12,7 +12,7 @@ final class StudentProfileTenantTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_student_profile_operations_reject_missing_and_mismatched_school_context(): void
+    public function test_student_profile_operations_allow_resolved_school_session_and_reject_mismatched_school_context(): void
     {
         $school = School::factory()->create();
         $otherSchool = School::factory()->create();
@@ -21,8 +21,7 @@ final class StudentProfileTenantTest extends TestCase
 
         $this->withToken($token)
             ->getJson('/api/v1/student-profiles')
-            ->assertForbidden()
-            ->assertJsonPath('error.code', 'tenant_mismatch');
+            ->assertOk();
 
         $this->withToken($token)
             ->withHeader('X-School-Id', $otherSchool->uuid)

@@ -26,6 +26,7 @@ final class StudentProfileCreationService
         $this->assertCanManageStudentProfiles($actor, $school);
         $this->assertRegistrationIsUnique($school, $data->registrationNumber);
         $user = $this->resolveUser($school, $data->userId);
+        $this->assertUserProfileIsUnique($user);
         $academicYear = $this->resolveAcademicYear($school, $data->currentAcademicYearId);
         $guardians = $this->guardians->activeSameSchoolGuardians($data->guardianAssociations, $school);
 
@@ -92,6 +93,19 @@ final class StudentProfileCreationService
         }
 
         return $user;
+    }
+
+    private function assertUserProfileIsUnique(?User $user): void
+    {
+        if ($user === null) {
+            return;
+        }
+
+        if (StudentProfile::query()->where('user_id', $user->id)->exists()) {
+            throw ValidationException::withMessages([
+                'user_id' => ['User is already linked to another student profile.'],
+            ]);
+        }
     }
 
     private function resolveAcademicYear(School $school, ?string $academicYearId): ?AcademicYear

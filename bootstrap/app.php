@@ -8,7 +8,6 @@ use App\Exceptions\PermissionDeniedException;
 use App\Exceptions\TenantContextException;
 use App\Exceptions\TokenRejectedException;
 use App\Http\Middleware\AuthenticateBearerToken;
-use App\Http\Middleware\RequireExplicitSchoolContext;
 use App\Http\Middleware\ResolveSchoolContext;
 use App\Http\Resources\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -32,7 +31,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'schoolmaster.auth' => AuthenticateBearerToken::class,
             'schoolmaster.school_context' => ResolveSchoolContext::class,
-            'schoolmaster.explicit_school_context' => RequireExplicitSchoolContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

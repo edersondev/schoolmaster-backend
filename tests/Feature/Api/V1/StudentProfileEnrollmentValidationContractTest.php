@@ -25,6 +25,11 @@ final class StudentProfileEnrollmentValidationContractTest extends TestCase
 
         $this->withToken($token)
             ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/student-profiles?sort=last_name')
+            ->assertUnprocessable();
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
             ->postJson('/api/v1/student-profiles', [
                 'registration_number' => 'STU-VAL',
                 'first_name' => 'Aline',

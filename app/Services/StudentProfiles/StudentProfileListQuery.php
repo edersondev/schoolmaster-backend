@@ -10,10 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 final class StudentProfileListQuery
 {
-    public const DEFAULT_SORT = 'last_name';
+    public const DEFAULT_SORT = 'full_name';
 
     /** @var array<int, string> */
-    public const ALLOWED_SORTS = ['first_name', 'last_name', 'full_name', 'registration_number', 'enrolled_at', 'status', 'created_at'];
+    public const ALLOWED_SORTS = ['full_name', 'registration_number', 'enrolled_at', 'status', 'created_at'];
 
     /** @var array<int, string> */
     public const ALLOWED_STATUSES = ['active', 'inactive', 'transferred'];
