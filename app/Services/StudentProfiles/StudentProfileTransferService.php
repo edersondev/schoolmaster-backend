@@ -48,11 +48,12 @@ final class StudentProfileTransferService
     {
         $this->assertCanTransferStudentProfiles($actor, $school);
         $this->validator->assertSourceProfileCanTransfer($profile);
+        $this->validator->assertDestinationProfileContext($data->destinationSchoolId, $data->destinationStudentProfileId);
 
-        $destinationSchool = $this->resolveDestinationSchool($data->destinationSchoolId);
-        $destinationProfile = $this->resolveDestinationProfile($data->destinationStudentProfileId);
-
-        $this->validator->assertDestinationPermission($actor, $destinationSchool);
+        $authorizedDestinationSchoolIds = $this->validator->authorizedDestinationSchoolIds($actor);
+        $this->validator->assertDestinationSchoolAuthorized($data->destinationSchoolId, $authorizedDestinationSchoolIds);
+        $destinationSchool = $this->resolveAuthorizedDestinationSchool($data->destinationSchoolId, $authorizedDestinationSchoolIds->all());
+        $destinationProfile = $this->resolveDestinationProfile($data->destinationStudentProfileId, $destinationSchool);
         $this->validator->assertDestinationProfile($destinationProfile, $destinationSchool);
 
         return DB::transaction(function () use ($actor, $school, $profile, $data, $destinationSchool, $destinationProfile): array {
@@ -96,34 +97,39 @@ final class StudentProfileTransferService
         });
     }
 
-    private function resolveDestinationSchool(?string $schoolId): ?School
+    private function resolveAuthorizedDestinationSchool(?string $schoolId, array $authorizedSchoolIds): ?School
     {
         if ($schoolId === null) {
             return null;
         }
 
-        $school = School::query()->where('uuid', $schoolId)->first();
-
-        if ($school === null) {
-            throw ValidationException::withMessages([
-                'destination_school_id' => ['Destination school must exist.'],
-            ]);
-        }
-
-        return $school;
+        return School::query()
+            ->where('uuid', $schoolId)
+            ->whereIn('id', $authorizedSchoolIds)
+            ->where('status', 'active')
+            ->first();
     }
 
-    private function resolveDestinationProfile(?string $studentProfileId): ?StudentProfile
+    private function resolveDestinationProfile(?string $studentProfileId, ?School $destinationSchool): ?StudentProfile
     {
         if ($studentProfileId === null) {
             return null;
         }
 
-        $profile = StudentProfile::query()->where('uuid', $studentProfileId)->first();
+        if ($destinationSchool === null) {
+            throw ValidationException::withMessages([
+                'destination_school_id' => ['Destination school is required when linking a destination student profile.'],
+            ]);
+        }
+
+        $profile = StudentProfile::query()
+            ->where('uuid', $studentProfileId)
+            ->where('school_id', $destinationSchool->id)
+            ->first();
 
         if ($profile === null) {
             throw ValidationException::withMessages([
-                'destination_student_profile_id' => ['Destination student profile must exist.'],
+                'destination_student_profile_id' => ['Destination student profile must belong to the destination school.'],
             ]);
         }
 

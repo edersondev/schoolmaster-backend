@@ -73,7 +73,7 @@ final class StudentProfileCreationService
 
     private function assertRegistrationIsUnique(School $school, string $registrationNumber): void
     {
-        if (StudentProfile::query()->where('school_id', $school->id)->where('registration_number', $registrationNumber)->exists()) {
+        if (StudentProfile::withTrashed()->where('school_id', $school->id)->where('registration_number', $registrationNumber)->exists()) {
             throw new ConflictException('Student profile registration number already exists in the resolved school.');
         }
     }
