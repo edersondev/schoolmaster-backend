@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\SchoolController;
 use App\Http\Controllers\Api\V1\StudentAttendanceController;
 use App\Http\Controllers\Api\V1\StudentGradeController;
 use App\Http\Controllers\Api\V1\StudentLearningSetController;
+use App\Http\Controllers\Api\V1\StudentProfileController;
 use App\Http\Controllers\Api\V1\StudentTeacherContentController;
 use App\Http\Controllers\Api\V1\TeacherContentController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -50,6 +51,14 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('/guardians', [GuardianController::class, 'index'])->name('api.v1.guardians.index');
             Route::post('/guardians', [GuardianController::class, 'store'])->name('api.v1.guardians.store');
+
+            Route::prefix('student-profiles')->name('api.v1.student-profiles.')->group(function (): void {
+                Route::get('/', [StudentProfileController::class, 'index'])->name('index');
+                Route::post('/', [StudentProfileController::class, 'store'])->name('store');
+                Route::patch('/{studentProfileId}/status', [StudentProfileController::class, 'updateStatus'])->whereUuid('studentProfileId')->name('status.update');
+                Route::post('/{studentProfileId}/transfer', [StudentProfileController::class, 'transfer'])->whereUuid('studentProfileId')->name('transfer');
+                Route::get('/{studentProfileId}', [StudentProfileController::class, 'show'])->whereUuid('studentProfileId')->name('show');
+            });
 
             Route::get('/teacher-content', [TeacherContentController::class, 'index'])->name('api.v1.teacher-content.index');
             Route::post('/teacher-content', [TeacherContentController::class, 'store'])->name('api.v1.teacher-content.store');

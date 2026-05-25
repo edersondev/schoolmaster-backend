@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\AuthLockoutException;
+use App\Exceptions\ConflictException;
 use App\Exceptions\InactiveRecordException;
 use App\Exceptions\OutputExpiredException;
 use App\Exceptions\PermissionDeniedException;
@@ -51,6 +52,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (OutputExpiredException $exception) {
             return ApiResponse::outputExpired($exception->getMessage());
+        });
+
+        $exceptions->render(function (ConflictException $exception) {
+            return ApiResponse::error('conflict', $exception->getMessage(), [], 409);
         });
 
         $exceptions->render(function (TenantContextException $exception) {
