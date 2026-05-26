@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 #[Fillable(['uuid', 'name', 'code', 'status', 'contact_email', 'contact_phone', 'address_summary'])]
@@ -17,7 +18,7 @@ use Illuminate\Support\Str;
 final class School extends Model
 {
     /** @use HasFactory<SchoolFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected static function booted(): void
     {

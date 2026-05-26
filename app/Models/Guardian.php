@@ -9,12 +9,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 #[Fillable(['uuid', 'school_id', 'full_name', 'relationship_type', 'contact_email', 'contact_phone', 'status'])]
 final class Guardian extends Model
 {
-    use BelongsToSchool, HasFactory;
+    use BelongsToSchool, HasFactory, SoftDeletes;
 
     protected static function booted(): void
     {

@@ -2,9 +2,16 @@
 
 namespace App\Providers;
 
+use App\Models\AcademicPeriod;
+use App\Models\AcademicYear;
 use App\Models\EnrollmentHistory;
+use App\Models\Guardian;
+use App\Models\Role;
+use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\StudentTransfer;
+use App\Models\User;
+use App\Policies\AdministrationLifecyclePolicy;
 use App\Policies\EnrollmentHistoryPolicy;
 use App\Policies\StudentProfilePolicy;
 use App\Policies\StudentTransferPolicy;
@@ -26,6 +33,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::policy(School::class, AdministrationLifecyclePolicy::class);
+        Gate::policy(User::class, AdministrationLifecyclePolicy::class);
+        Gate::policy(Role::class, AdministrationLifecyclePolicy::class);
+        Gate::policy(AcademicYear::class, AdministrationLifecyclePolicy::class);
+        Gate::policy(AcademicPeriod::class, AdministrationLifecyclePolicy::class);
+        Gate::policy(Guardian::class, AdministrationLifecyclePolicy::class);
         Gate::policy(StudentProfile::class, StudentProfilePolicy::class);
         Gate::policy(EnrollmentHistory::class, EnrollmentHistoryPolicy::class);
         Gate::policy(StudentTransfer::class, StudentTransferPolicy::class);
