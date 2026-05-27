@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\AdministrationLifecycle;
 
 use App\Models\School;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -41,5 +42,26 @@ final class SchoolDetailUpdateTest extends TestCase
         $this->withToken($token)
             ->patchJson("/api/v1/schools/{$school->uuid}", ['name' => 'Denied'])
             ->assertForbidden();
+    }
+
+    public function test_school_status_update_uses_lifecycle_dependency_checks(): void
+    {
+        $school = School::factory()->create(['name' => 'Still Active', 'status' => 'active']);
+        User::factory()->create(['school_id' => $school->id, 'status' => 'active']);
+        $token = $this->bearerTokenFor($this->createPlatformUser(['schools.view', 'schools.manage', 'schools.lifecycle']));
+
+        $this->withToken($token)
+            ->patchJson("/api/v1/schools/{$school->uuid}", [
+                'name' => 'Should Roll Back',
+                'status' => 'inactive',
+            ])
+            ->assertConflict()
+            ->assertJsonPath('error.code', 'conflict');
+
+        $this->assertDatabaseHas('schools', [
+            'id' => $school->id,
+            'name' => 'Still Active',
+            'status' => 'active',
+        ]);
     }
 }

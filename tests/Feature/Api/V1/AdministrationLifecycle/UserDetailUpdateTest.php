@@ -44,4 +44,23 @@ final class UserDetailUpdateTest extends TestCase
             ->getJson("/api/v1/users/{$user->uuid}")
             ->assertNotFound();
     }
+
+    public function test_user_update_rejects_duplicate_email_before_persistence(): void
+    {
+        $school = School::factory()->create();
+        $admin = $this->createSchoolAdmin($school, ['users.view', 'users.manage']);
+        $user = User::factory()->create(['school_id' => $school->id, 'email' => 'target@example.test']);
+        User::factory()->create(['school_id' => $school->id, 'email' => 'taken@example.test']);
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->patchJson("/api/v1/users/{$user->uuid}", ['email' => 'taken@example.test'])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'email' => 'target@example.test',
+        ]);
+    }
 }

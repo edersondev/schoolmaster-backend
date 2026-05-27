@@ -27,6 +27,7 @@ final class AdministrationUpdateService
     public function __construct(
         private readonly AdministrationResourceRegistry $registry,
         private readonly TenantContextService $tenantContext,
+        private readonly AdministrationLifecycleService $lifecycle,
         private readonly LifecycleHistoryRecorder $history,
         private readonly UserService $users,
         private readonly RoleService $roles,
@@ -73,6 +74,8 @@ final class AdministrationUpdateService
                 }
             }
 
+            $this->assertStatusTransitionAllowed($resource, $attributes);
+
             $resource->fill($attributes);
             $resource->save();
 
@@ -93,6 +96,35 @@ final class AdministrationUpdateService
 
             return $resource->refresh()->load($this->registry->config($resourceType)['relations']);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function assertStatusTransitionAllowed(Model $resource, array $attributes): void
+    {
+        if (! array_key_exists('status', $attributes)) {
+            return;
+        }
+
+        $fromStatus = (string) ($resource->getAttribute('status') ?? '');
+        $toStatus = (string) $attributes['status'];
+
+        if ($fromStatus === $toStatus) {
+            return;
+        }
+
+        $action = match ($toStatus) {
+            'active' => LifecycleAction::ACTIVATE,
+            'inactive' => LifecycleAction::DEACTIVATE,
+            default => null,
+        };
+
+        if ($action === null) {
+            return;
+        }
+
+        $this->lifecycle->assertTransitionEligibility($resource, $action);
     }
 
     /**

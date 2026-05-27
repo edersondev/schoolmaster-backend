@@ -54,8 +54,7 @@ final class AdministrationLifecycleService
 
     public function applyToResource(User $actor, Model $resource, string $action, ApplyLifecycleTransitionData $data): AdministrationLifecycleResult
     {
-        $this->rules->assertTransitionAllowed($resource, $action);
-        $this->assertNoDependencies($resource, $action);
+        $this->assertTransitionEligibility($resource, $action);
         $fromStatus = $resource->getAttribute('status');
         $toStatus = $this->rules->statusAfter($resource, $action);
 
@@ -94,6 +93,12 @@ final class AdministrationLifecycleService
                 history: $history,
             );
         });
+    }
+
+    public function assertTransitionEligibility(Model $resource, string $action): void
+    {
+        $this->rules->assertTransitionAllowed($resource, $action);
+        $this->assertNoDependencies($resource, $action);
     }
 
     private function assertNoDependencies(Model $resource, string $action): void
