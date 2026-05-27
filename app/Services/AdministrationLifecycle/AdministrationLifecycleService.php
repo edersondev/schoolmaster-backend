@@ -13,6 +13,7 @@ use App\Services\AdministrationLifecycle\DependencyChecks\GuardianLifecycleDepen
 use App\Services\AdministrationLifecycle\DependencyChecks\RoleLifecycleDependencyCheck;
 use App\Services\AdministrationLifecycle\DependencyChecks\SchoolLifecycleDependencyCheck;
 use App\Services\AdministrationLifecycle\DependencyChecks\UserLifecycleDependencyCheck;
+use App\Services\AccountLifecycle\BearerTokenRevocationService;
 use App\Services\Concerns\AuthorizesAdministrationLifecycle;
 use App\Services\TenantContextService;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +34,7 @@ final class AdministrationLifecycleService
         private readonly AcademicYearLifecycleDependencyCheck $academicYearDependencies,
         private readonly AcademicPeriodLifecycleDependencyCheck $academicPeriodDependencies,
         private readonly GuardianLifecycleDependencyCheck $guardianDependencies,
+        private readonly BearerTokenRevocationService $bearerTokens,
     ) {}
 
     public function apply(User $actor, ?TenantContext $context, string $resourceType, string $uuid, string $action, ApplyLifecycleTransitionData $data): AdministrationLifecycleResult
@@ -61,6 +63,10 @@ final class AdministrationLifecycleService
         return DB::transaction(function () use ($actor, $resource, $action, $data, $fromStatus, $toStatus): AdministrationLifecycleResult {
             if ($action === LifecycleAction::ACTIVATE || $action === LifecycleAction::DEACTIVATE) {
                 $resource->forceFill(['status' => $toStatus])->save();
+            }
+
+            if ($action === LifecycleAction::DEACTIVATE && $resource instanceof User) {
+                $this->bearerTokens->revokeAllForUser($resource);
             }
 
             if ($action === LifecycleAction::DELETE) {

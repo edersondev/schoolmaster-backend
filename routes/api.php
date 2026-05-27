@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\V1\AcademicPeriodController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
+use App\Http\Controllers\Api\V1\AccountInvitationController;
+use App\Http\Controllers\Api\V1\AccountRecoveryController;
 use App\Http\Controllers\Api\V1\AdministrationLifecycleController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\Api\V1\BulkAdministrationLifecycleController;
 use App\Http\Controllers\Api\V1\GradeController;
 use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearningSetController;
+use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\QuestionnaireController;
 use App\Http\Controllers\Api\V1\ReportController;
@@ -28,9 +31,20 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/health', fn () => ['status' => 'ok'])->name('api.v1.health');
 
     Route::post('/auth/login', [AuthController::class, 'login'])->name('api.v1.auth.login');
+    Route::post('/auth/password-reset-requests', [PasswordResetController::class, 'request'])->name('api.v1.auth.password-reset-requests');
+    Route::post('/auth/password-resets', [PasswordResetController::class, 'complete'])->name('api.v1.auth.password-resets');
+    Route::post('/account-invitations/{invitationToken}/setup', [AccountInvitationController::class, 'complete'])->name('api.v1.account-invitations.setup');
+
     Route::middleware('schoolmaster.auth')->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me'])->name('api.v1.auth.me');
         Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.v1.auth.logout');
+
+        Route::post('/account-invitations', [AccountInvitationController::class, 'store'])->name('api.v1.account-invitations.store');
+        Route::post('/account-invitations/{invitationToken}/resend', [AccountInvitationController::class, 'resend'])->name('api.v1.account-invitations.resend');
+        Route::get('/users/{userId}/account-lock', [AccountRecoveryController::class, 'show'])->whereUuid('userId')->name('api.v1.users.account-lock.show');
+        Route::post('/users/{userId}/account-lock', [AccountRecoveryController::class, 'lock'])->whereUuid('userId')->name('api.v1.users.account-lock.store');
+        Route::delete('/users/{userId}/account-lock', [AccountRecoveryController::class, 'unlock'])->whereUuid('userId')->name('api.v1.users.account-lock.destroy');
+        Route::post('/users/{userId}/account-reactivation', [AccountRecoveryController::class, 'recover'])->whereUuid('userId')->name('api.v1.users.account-reactivation.store');
 
         Route::get('/schools', [SchoolController::class, 'index'])->name('api.v1.schools.index');
         Route::post('/schools', [SchoolController::class, 'store'])->name('api.v1.schools.store');
