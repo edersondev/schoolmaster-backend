@@ -8,6 +8,7 @@ use App\DTOs\AccountLifecycle\CompletePasswordResetData;
 use App\DTOs\AccountLifecycle\RequestPasswordResetData;
 use App\Exceptions\ConflictException;
 use App\Exceptions\TokenRejectedException;
+use App\Services\LoginAttemptControlService;
 use App\Models\PasswordResetRequest;
 use App\Models\User;
 use App\Repositories\AccountLifecycleRepository;
@@ -16,12 +17,15 @@ use Illuminate\Support\Facades\Hash;
 
 final class PasswordResetService
 {
+    private const TOKEN_IP_ATTEMPT_KEY = 'reset_token_ip';
+
     public function __construct(
         private readonly AccountLifecycleRepository $repository,
         private readonly LifecycleTokenService $tokens,
         private readonly BearerTokenRevocationService $bearerTokens,
         private readonly AccountLifecycleAuditService $audit,
         private readonly EmailDeliveryRequestMetadataService $delivery,
+        private readonly LoginAttemptControlService $attempts,
     ) {}
 
     public function request(RequestPasswordResetData $data, ?string $sourceIp = null): array
@@ -30,6 +34,12 @@ final class PasswordResetService
         $schoolId = $school?->id;
         $identifierHash = $this->identifierHash($data->email, $schoolId);
         $requestIpHash = $sourceIp === null ? null : hash('sha256', $sourceIp);
+
+        if ($sourceIp !== null && $this->attempts->isLockedKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp)) {
+            $this->audit->record('password_reset_request_suppressed', 'failure', sourceIp: $sourceIp);
+
+            return ['accepted' => true];
+        }
 
         $latest = $this->repository->latestPendingResetForIdentifier($identifierHash, $requestIpHash);
         if ($this->isRequestSuppressed($latest)) {
@@ -98,9 +108,17 @@ final class PasswordResetService
 
     public function complete(CompletePasswordResetData $data, ?string $sourceIp = null): array
     {
+        if ($sourceIp !== null && $this->attempts->isLockedKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp)) {
+            throw new TokenRejectedException('token_invalid', 'Lifecycle token is invalid.');
+        }
+
         $reset = $this->repository->pendingResetByHash($this->tokens->hash($data->token));
 
         if ($reset === null) {
+            if ($sourceIp !== null) {
+                $this->attempts->recordFailureForKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp);
+            }
+
             throw new TokenRejectedException('token_invalid', 'Lifecycle token is invalid.');
         }
 
@@ -130,6 +148,11 @@ final class PasswordResetService
                 'completed_at' => now(),
             ])->save();
             $this->bearerTokens->revokeAllForUser($user);
+
+            if ($sourceIp !== null) {
+                $this->attempts->clearKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp);
+            }
+
             $this->audit->record('password_reset_completed', 'success', $user, sourceIp: $sourceIp);
 
             return [
@@ -174,6 +197,10 @@ final class PasswordResetService
 
     private function recordFailure(PasswordResetRequest $reset, ?string $sourceIp): void
     {
+        if ($sourceIp !== null) {
+            $this->attempts->recordFailureForKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp);
+        }
+
         $windowStarted = $reset->failed_completion_window_started_at;
         $count = $windowStarted !== null && $windowStarted->isAfter(now()->subMinutes(15))
             ? $reset->failed_completion_count + 1

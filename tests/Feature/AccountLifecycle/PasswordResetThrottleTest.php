@@ -71,4 +71,32 @@ final class PasswordResetThrottleTest extends TestCase
 
         $this->assertSame(1, PasswordResetRequest::query()->whereNotNull('token_hash')->count());
     }
+
+    public function test_unknown_reset_token_attempts_suppress_new_reset_tokens_by_ip(): void
+    {
+        $school = School::factory()->create();
+        User::factory()->create([
+            'school_id' => $school->id,
+            'email' => 'ip-suppressed@example.test',
+            'status' => 'active',
+        ]);
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.20'])
+                ->postJson('/api/v1/auth/password-resets', [
+                    'token' => 'random-invalid-reset-token-1234567890',
+                    'password' => 'another-secure-password',
+                ])
+                ->assertUnauthorized();
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.20'])
+            ->postJson('/api/v1/auth/password-reset-requests', [
+                'email' => 'ip-suppressed@example.test',
+                'school_id' => $school->uuid,
+            ])
+            ->assertAccepted();
+
+        $this->assertSame(0, PasswordResetRequest::query()->whereNotNull('token_hash')->count());
+    }
 }

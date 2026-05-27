@@ -40,10 +40,20 @@ final class AccountInvitationService
         }
 
         return DB::transaction(function () use ($actor, $data, $school, $roles, $sourceIp): AccountInvitation {
-            $user = $this->repository->findUserByEmail($data->email, $school?->id);
+            $user = $this->repository->findUserByEmailIncludingTrashed($data->email, $school?->id);
 
-            if ($user !== null && $user->status === 'active') {
-                throw new ConflictException('Existing active accounts cannot be invited again.');
+            if ($user !== null) {
+                if ($user->trashed() || $user->status === 'inactive') {
+                    throw new ConflictException('Inactive or deleted accounts cannot be invited.');
+                }
+
+                if ($user->status === 'active') {
+                    throw new ConflictException('Existing active accounts cannot be invited again.');
+                }
+
+                if ($user->status !== 'invited') {
+                    throw new ConflictException('Account is not eligible for invitation.');
+                }
             }
 
             $user ??= User::query()->create([

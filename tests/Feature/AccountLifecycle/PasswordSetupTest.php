@@ -53,4 +53,27 @@ final class PasswordSetupTest extends TestCase
             'school_id' => $school->uuid,
         ])->assertOk();
     }
+
+    public function test_password_setup_rejects_non_invited_account_states(): void
+    {
+        $school = School::factory()->create();
+        $user = User::factory()->create([
+            'school_id' => $school->id,
+            'email' => 'inactive-setup@example.test',
+            'status' => 'inactive',
+        ]);
+
+        AccountInvitation::query()->create([
+            'target_user_id' => $user->id,
+            'school_id' => $school->id,
+            'scope' => 'school',
+            'token_hash' => hash('sha256', 'inactive-account-token-1234567890'),
+            'status' => 'pending',
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        $this->postJson('/api/v1/account-invitations/inactive-account-token-1234567890/setup', [
+            'password' => 'correct-horse-battery-staple',
+        ])->assertConflict();
+    }
 }

@@ -7,6 +7,7 @@ namespace App\Services\AccountLifecycle;
 use App\DTOs\AccountLifecycle\CompleteAccountInvitationData;
 use App\Exceptions\ConflictException;
 use App\Exceptions\TokenRejectedException;
+use App\Services\LoginAttemptControlService;
 use App\Models\AccountInvitation;
 use App\Repositories\AccountLifecycleRepository;
 use Illuminate\Support\Facades\DB;
@@ -14,17 +15,28 @@ use Illuminate\Support\Facades\Hash;
 
 final class PasswordSetupService
 {
+    private const TOKEN_IP_ATTEMPT_KEY = 'invite_token_ip';
+
     public function __construct(
         private readonly AccountLifecycleRepository $repository,
         private readonly LifecycleTokenService $tokens,
         private readonly AccountLifecycleAuditService $audit,
+        private readonly LoginAttemptControlService $attempts,
     ) {}
 
     public function complete(CompleteAccountInvitationData $data, ?string $sourceIp = null): array
     {
+        if ($sourceIp !== null && $this->attempts->isLockedKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp)) {
+            throw new TokenRejectedException('token_invalid', 'Lifecycle token is invalid.');
+        }
+
         $invitation = $this->repository->pendingInvitationByHash($this->tokens->hash($data->token));
 
         if ($invitation === null) {
+            if ($sourceIp !== null) {
+                $this->attempts->recordFailureForKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp);
+            }
+
             throw new TokenRejectedException('token_invalid', 'Lifecycle token is invalid.');
         }
 
@@ -36,12 +48,16 @@ final class PasswordSetupService
         return DB::transaction(function () use ($invitation, $data, $sourceIp): array {
             $user = $invitation->targetUser;
 
-            if ($user->status === 'active') {
-                throw new ConflictException('Account has already completed password setup.');
+            if ($user->status !== 'invited') {
+                throw new ConflictException('Account is not eligible for password setup.');
             }
 
             if ($user->school !== null && $user->school->status !== 'active') {
                 throw new ConflictException('Inactive schools cannot complete account setup.');
+            }
+
+            if ($this->repository->activeAdministrativeLock($user) !== null) {
+                throw new ConflictException('Locked accounts cannot complete account setup.');
             }
 
             $user->forceFill([
@@ -53,6 +69,10 @@ final class PasswordSetupService
                 'status' => 'completed',
                 'completed_at' => now(),
             ])->save();
+
+            if ($sourceIp !== null) {
+                $this->attempts->clearKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp);
+            }
 
             $this->audit->record('account_invitation_completed', 'success', $user, sourceIp: $sourceIp);
 
@@ -67,6 +87,10 @@ final class PasswordSetupService
 
     private function recordFailure(AccountInvitation $invitation, ?string $sourceIp): void
     {
+        if ($sourceIp !== null) {
+            $this->attempts->recordFailureForKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp);
+        }
+
         $windowStarted = $invitation->failed_completion_window_started_at;
         $count = $windowStarted !== null && $windowStarted->isAfter(now()->subMinutes(15))
             ? $invitation->failed_completion_count + 1

@@ -10,6 +10,7 @@ use App\Models\PasswordResetRequest;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
 final class AccountLifecycleRepository
@@ -34,6 +35,24 @@ final class AccountLifecycleRepository
             ->with(['school', 'roles.permissions'])
             ->where('email', strtolower($email))
             ->where('school_id', $schoolId)
+            ->first();
+    }
+
+    public function findUserByEmailIncludingTrashed(string $email, ?int $schoolId): ?User
+    {
+        return User::query()
+            ->with(['school', 'roles.permissions'])
+            ->withTrashed()
+            ->where('email', strtolower($email))
+            ->where(function (Builder $query) use ($schoolId): void {
+                if ($schoolId === null) {
+                    $query->whereNull('school_id');
+
+                    return;
+                }
+
+                $query->where('school_id', $schoolId);
+            })
             ->first();
     }
 

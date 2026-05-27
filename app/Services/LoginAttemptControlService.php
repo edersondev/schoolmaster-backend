@@ -29,6 +29,29 @@ final class LoginAttemptControlService
         $this->increment('ip', $ip);
     }
 
+    public function isLockedKey(string $type, string $key): bool
+    {
+        $lockedUntil = LoginAttempt::query()
+            ->where('attempt_key_type', $type)
+            ->where('attempt_key', $key)
+            ->value('locked_until');
+
+        return $lockedUntil !== null && now()->lt($lockedUntil);
+    }
+
+    public function recordFailureForKey(string $type, string $key): void
+    {
+        $this->increment($type, $key);
+    }
+
+    public function clearKey(string $type, string $key): void
+    {
+        LoginAttempt::query()
+            ->where('attempt_key_type', $type)
+            ->where('attempt_key', $key)
+            ->delete();
+    }
+
     public function clear(string $email, string $ip): void
     {
         LoginAttempt::query()
