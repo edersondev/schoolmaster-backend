@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\DTOs\AuditEventData;
+use App\Repositories\AccountLifecycleRepository;
 use App\Exceptions\TokenRejectedException;
 use App\Models\School;
 use App\Models\User;
@@ -19,6 +20,7 @@ final class AuthService
         private readonly LoginAttemptControlService $attempts,
         private readonly AuditEventService $audit,
         private readonly TenantContextResolver $tenantContextResolver,
+        private readonly AccountLifecycleRepository $accountLifecycle,
     ) {}
 
     /**
@@ -44,6 +46,7 @@ final class AuthService
             || (array_key_exists('school_id', $credentials) && $credentials['school_id'] !== null && $school === null)
             || ($school !== null && $user->school_id !== $school->id)
             || ($user->school !== null && $user->school->status !== 'active')
+            || $this->accountLifecycle->activeAdministrativeLock($user) !== null
         ) {
             $this->attempts->recordFailure($email, $ip);
             $this->audit->record(new AuditEventData('login_failure', 'failure', sourceIp: $ip, metadata: ['email' => $email]));

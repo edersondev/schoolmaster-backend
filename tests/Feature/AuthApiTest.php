@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\AccountLock;
 use App\Models\AuthToken;
 use App\Models\School;
 use App\Models\User;
@@ -73,5 +74,30 @@ final class AuthApiTest extends TestCase
         $this->postJson('/api/v1/auth/login', ['email' => 'missing@example.com', 'password' => 'bad'])
             ->assertTooManyRequests()
             ->assertJsonPath('error.code', 'auth_locked');
+    }
+
+    public function test_locked_user_cannot_log_in_with_valid_password(): void
+    {
+        $school = School::factory()->create();
+        $user = User::factory()->create([
+            'school_id' => $school->id,
+            'email' => 'locked-user@example.com',
+            'password' => Hash::make('password'),
+            'status' => 'active',
+        ]);
+
+        AccountLock::query()->create([
+            'user_id' => $user->id,
+            'school_id' => $school->id,
+            'lock_type' => 'administrative',
+            'status' => 'active',
+            'locked_at' => now(),
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password',
+            'school_id' => $school->uuid,
+        ])->assertUnauthorized();
     }
 }
