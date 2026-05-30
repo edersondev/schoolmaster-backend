@@ -8,18 +8,23 @@ use App\Models\AcademicPeriod;
 use App\Models\AcademicYear;
 use App\Models\School;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 final class ClassSectionContractTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_openapi_contains_class_section_operation_ids(): void
+    public function test_class_section_routes_are_registered_in_the_backend(): void
     {
-        $contract = file_get_contents(base_path('specs/api/openapi.yaml'));
-
-        foreach (['listClassSections', 'createClassSection', 'getClassSection', 'updateClassSection', 'updateClassSectionStatus'] as $operationId) {
-            $this->assertStringContainsString('operationId: '.$operationId, $contract);
+        foreach ([
+            'api.v1.class-sections.index',
+            'api.v1.class-sections.store',
+            'api.v1.class-sections.show',
+            'api.v1.class-sections.update',
+            'api.v1.class-sections.status.update',
+        ] as $routeName) {
+            $this->assertTrue(Route::has($routeName), sprintf('Expected route [%s] to be registered.', $routeName));
         }
     }
 

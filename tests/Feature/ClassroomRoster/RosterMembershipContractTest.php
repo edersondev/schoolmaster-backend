@@ -10,18 +10,21 @@ use App\Models\ClassSection;
 use App\Models\School;
 use App\Models\StudentProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 final class RosterMembershipContractTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_openapi_contains_membership_operation_ids(): void
+    public function test_roster_membership_routes_are_registered_in_the_backend(): void
     {
-        $contract = file_get_contents(base_path('specs/api/openapi.yaml'));
-
-        foreach (['listClassSectionMemberships', 'batchAddClassSectionMemberships', 'batchEndClassSectionMemberships'] as $operationId) {
-            $this->assertStringContainsString('operationId: '.$operationId, $contract);
+        foreach ([
+            'api.v1.class-sections.memberships.index',
+            'api.v1.class-sections.memberships.store',
+            'api.v1.class-sections.memberships.update',
+        ] as $routeName) {
+            $this->assertTrue(Route::has($routeName), sprintf('Expected route [%s] to be registered.', $routeName));
         }
     }
 
