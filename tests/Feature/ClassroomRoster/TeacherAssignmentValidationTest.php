@@ -68,6 +68,34 @@ final class TeacherAssignmentValidationTest extends TestCase
             ->assertUnprocessable();
     }
 
+    public function test_list_rejects_cross_tenant_academic_period_filter(): void
+    {
+        [$school, , $admin] = $this->context();
+        $otherSchool = School::factory()->create();
+        $otherYear = AcademicYear::query()->create([
+            'school_id' => $otherSchool->id,
+            'name' => '2027',
+            'start_date' => '2027-01-01',
+            'end_date' => '2027-12-31',
+            'status' => 'active',
+        ]);
+        $otherPeriod = AcademicPeriod::query()->create([
+            'school_id' => $otherSchool->id,
+            'academic_year_id' => $otherYear->id,
+            'name' => 'Other Term',
+            'sequence' => 1,
+            'start_date' => '2027-01-01',
+            'end_date' => '2027-12-31',
+            'status' => 'active',
+        ]);
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/teacher-assignments?academicPeriodId='.$otherPeriod->uuid)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.details.fields.academicPeriodId.0', 'The academic period was not found in the resolved school.');
+    }
+
     private function context(): array
     {
         $school = School::factory()->create();

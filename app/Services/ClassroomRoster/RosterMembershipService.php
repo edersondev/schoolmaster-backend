@@ -17,6 +17,7 @@ use App\Repositories\ClassroomRoster\ClassroomRosterLookupRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -50,41 +51,50 @@ final readonly class RosterMembershipService
     {
         $school = $this->schoolContextGuard->requireResolved($context);
         $this->authorizeManage($actor, $school);
-        $classSection = $this->classSection($classSectionUuid, $school);
-        $period = $this->lookups->academicPeriodForSchool($data['academic_period_id'], $school->id);
-
-        if ($period === null || $period->id !== $classSection->academic_period_id || $period->status !== 'active') {
-            throw ValidationException::withMessages(['academic_period_id' => ['The academic period is not compatible with the class section.']]);
-        }
-
         $effectiveDate = CarbonImmutable::parse($data['effective_start_date'])->startOfDay();
-        $this->effectiveDates->assertUsable(new EffectiveDateInput($school, $period, $effectiveDate, 'effective_start_date'));
         $students = $this->students($data['student_profile_ids'], $school, $effectiveDate);
-        $this->assertNoActiveMemberships($classSection, $period->id, $students);
 
-        return DB::transaction(function () use ($actor, $school, $classSection, $period, $effectiveDate, $students): array {
-            $memberships = [];
+        try {
+            return DB::transaction(function () use ($actor, $school, $classSectionUuid, $data, $effectiveDate, $students): array {
+                $classSection = $this->lockActiveClassSection($classSectionUuid, $school);
+                $period = $this->lookups->academicPeriodForSchool($data['academic_period_id'], $school->id);
 
-            foreach ($students as $student) {
-                $memberships[] = RosterMembership::query()->create([
-                    'school_id' => $school->id,
-                    'class_section_id' => $classSection->id,
-                    'student_profile_id' => $student->id,
-                    'academic_period_id' => $period->id,
+                if ($period === null || $period->id !== $classSection->academic_period_id || $period->status !== 'active') {
+                    throw ValidationException::withMessages(['academic_period_id' => ['The academic period is not compatible with the class section.']]);
+                }
+
+                $this->effectiveDates->assertUsable(new EffectiveDateInput($school, $period, $effectiveDate, 'effective_start_date'));
+                $this->assertNoActiveMemberships($classSection, $period->id, $students);
+
+                $memberships = [];
+
+                foreach ($students as $student) {
+                    $memberships[] = RosterMembership::query()->create([
+                        'school_id' => $school->id,
+                        'class_section_id' => $classSection->id,
+                        'student_profile_id' => $student->id,
+                        'academic_period_id' => $period->id,
+                        'status' => 'active',
+                        'effective_start_date' => $effectiveDate->toDateString(),
+                        'created_by_user_id' => $actor->id,
+                    ])->load(['school', 'classSection', 'studentProfile', 'academicPeriod', 'creator', 'ender']);
+                }
+
+                $this->auditLogger->record('roster_memberships.added', 'succeeded', $school, $actor, 'class_section', $classSection->uuid, metadata: [
+                    'academic_period_id' => $period->uuid,
+                    'batch_size' => count($students),
                     'status' => 'active',
-                    'effective_start_date' => $effectiveDate->toDateString(),
-                    'created_by_user_id' => $actor->id,
-                ])->load(['school', 'classSection', 'studentProfile', 'academicPeriod', 'creator', 'ender']);
+                ]);
+
+                return $memberships;
+            });
+        } catch (QueryException $exception) {
+            if ($this->isDuplicateConstraint($exception)) {
+                throw new ConflictException('An active roster membership already exists for at least one requested student.');
             }
 
-            $this->auditLogger->record('roster_memberships.added', 'succeeded', $school, $actor, 'class_section', $classSection->uuid, metadata: [
-                'academic_period_id' => $period->uuid,
-                'batch_size' => count($students),
-                'status' => 'active',
-            ]);
-
-            return $memberships;
-        });
+            throw $exception;
+        }
     }
 
     public function endBatch(User $actor, TenantContext $context, string $classSectionUuid, array $data): array
@@ -155,6 +165,26 @@ final readonly class RosterMembershipService
         return $classSection;
     }
 
+    private function lockActiveClassSection(string $uuid, School $school): ClassSection
+    {
+        $classSection = ClassSection::query()
+            ->with(['school', 'academicPeriod'])
+            ->where('uuid', $uuid)
+            ->where('school_id', $school->id)
+            ->lockForUpdate()
+            ->first();
+
+        if ($classSection === null) {
+            abort(404);
+        }
+
+        if ($classSection->status !== 'active') {
+            throw new ConflictException('Class section must be active for roster membership changes.');
+        }
+
+        return $classSection;
+    }
+
     private function periodId(string $periodUuid, School $school): int
     {
         $period = $this->lookups->academicPeriodForSchool($periodUuid, $school->id);
@@ -196,5 +226,11 @@ final readonly class RosterMembershipService
         if ($exists) {
             throw new ConflictException('An active roster membership already exists for at least one requested student.');
         }
+    }
+
+    private function isDuplicateConstraint(QueryException $exception): bool
+    {
+        return str_contains((string) $exception->getMessage(), 'roster_memberships_active_unique')
+            || $exception->getCode() === '23000';
     }
 }

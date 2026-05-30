@@ -10,6 +10,7 @@ use App\Exceptions\TokenRejectedException;
 use App\Http\Middleware\AuthenticateBearerToken;
 use App\Http\Middleware\ResolveSchoolContext;
 use App\Http\Resources\ApiResponse;
+use App\Services\ClassroomRoster\ClassroomRosterFailureAudit;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -18,6 +19,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -42,11 +44,27 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::unauthorized($exception->getMessage() ?: 'Authentication is missing or invalid.');
         });
 
-        $exceptions->render(function (AuthorizationException $exception) {
+        $exceptions->render(function (AuthorizationException $exception, \Illuminate\Http\Request $request) {
+            app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
+                'failure_type' => 'authorization',
+            ]);
+
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
         });
 
-        $exceptions->render(function (PermissionDeniedException $exception) {
+        $exceptions->render(function (AccessDeniedHttpException $exception, \Illuminate\Http\Request $request) {
+            app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
+                'failure_type' => 'access_denied',
+            ]);
+
+            return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
+        });
+
+        $exceptions->render(function (PermissionDeniedException $exception, \Illuminate\Http\Request $request) {
+            app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
+                'failure_type' => 'permission_denied',
+            ]);
+
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
         });
 
@@ -54,11 +72,19 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::outputExpired($exception->getMessage());
         });
 
-        $exceptions->render(function (ConflictException $exception) {
+        $exceptions->render(function (ConflictException $exception, \Illuminate\Http\Request $request) {
+            app(ClassroomRosterFailureAudit::class)->record($request, 'conflict', [
+                'failure_type' => 'conflict',
+            ]);
+
             return ApiResponse::error('conflict', $exception->getMessage(), [], 409);
         });
 
-        $exceptions->render(function (TenantContextException $exception) {
+        $exceptions->render(function (TenantContextException $exception, \Illuminate\Http\Request $request) {
+            app(ClassroomRosterFailureAudit::class)->record($request, 'tenant_mismatch', [
+                'failure_type' => 'tenant_context',
+            ]);
+
             return ApiResponse::tenantMismatch($exception->getMessage());
         });
 

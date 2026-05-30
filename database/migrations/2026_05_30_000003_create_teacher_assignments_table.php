@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('teacher_user_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('academic_period_id')->constrained('academic_periods')->cascadeOnDelete();
             $table->string('status')->default('active')->index();
+            $table->unsignedTinyInteger('active_assignment_guard')->nullable()->storedAs("case when status = 'active' then 1 else null end");
             $table->date('effective_start_date');
             $table->date('effective_end_date')->nullable();
             $table->string('deactivation_reason', 500)->nullable();
@@ -23,6 +24,10 @@ return new class extends Migration
             $table->foreignId('updated_by_user_id')->constrained('users')->restrictOnDelete();
             $table->timestamps();
 
+            $table->unique(
+                ['class_section_id', 'teacher_user_id', 'academic_period_id', 'active_assignment_guard'],
+                'teacher_assignments_active_unique'
+            );
             $table->index(['school_id', 'class_section_id', 'status'], 'teacher_assignments_school_section_status_index');
             $table->index(['teacher_user_id', 'academic_period_id', 'status'], 'teacher_assignments_teacher_period_status_index');
         });

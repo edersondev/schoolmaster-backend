@@ -176,24 +176,30 @@ final readonly class ClassSectionService
     public function updateStatus(User $actor, TenantContext $context, string $classSectionUuid, array $data): ClassSection
     {
         $classSection = $this->get($actor, $context, $classSectionUuid);
-
-        if ($classSection->status !== 'active') {
-            throw new ConflictException('Inactive class sections cannot be reactivated or transitioned again in v1.');
-        }
-
         $effectiveDate = CarbonImmutable::parse($data['effective_at'])->startOfDay();
-        $this->effectiveDates->assertUsable(new EffectiveDateInput(
-            school: $classSection->school,
-            academicPeriod: $classSection->academicPeriod,
-            effectiveDate: $effectiveDate,
-            field: 'effective_at',
-        ));
-
-        if ($this->lookups->hasActiveRosterMemberships($classSection->id) || $this->lookups->hasActiveTeacherAssignments($classSection->id)) {
-            throw new ConflictException('Class section cannot be inactivated while active memberships or teacher assignments exist.');
-        }
 
         return DB::transaction(function () use ($actor, $classSection, $data, $effectiveDate): ClassSection {
+            $classSection = ClassSection::query()
+                ->with(['school', 'academicPeriod', 'creator', 'updater'])
+                ->whereKey($classSection->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($classSection->status !== 'active') {
+                throw new ConflictException('Inactive class sections cannot be reactivated or transitioned again in v1.');
+            }
+
+            $this->effectiveDates->assertUsable(new EffectiveDateInput(
+                school: $classSection->school,
+                academicPeriod: $classSection->academicPeriod,
+                effectiveDate: $effectiveDate,
+                field: 'effective_at',
+            ));
+
+            if ($this->lookups->hasActiveRosterMemberships($classSection->id) || $this->lookups->hasActiveTeacherAssignments($classSection->id)) {
+                throw new ConflictException('Class section cannot be inactivated while active memberships or teacher assignments exist.');
+            }
+
             $classSection->update([
                 'status' => 'inactive',
                 'inactive_reason' => $data['reason'],
