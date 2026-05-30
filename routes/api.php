@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\AdministrationLifecycleController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BulkAdministrationLifecycleController;
+use App\Http\Controllers\Api\V1\ClassSectionController;
 use App\Http\Controllers\Api\V1\GradeController;
 use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearningSetController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\QuestionnaireController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RoleController;
+use App\Http\Controllers\Api\V1\RosterMembershipController;
 use App\Http\Controllers\Api\V1\SchoolController;
 use App\Http\Controllers\Api\V1\SchoolLifecycleController;
 use App\Http\Controllers\Api\V1\StudentAttendanceController;
@@ -24,6 +26,7 @@ use App\Http\Controllers\Api\V1\StudentLearningSetController;
 use App\Http\Controllers\Api\V1\StudentProfileController;
 use App\Http\Controllers\Api\V1\StudentTeacherContentController;
 use App\Http\Controllers\Api\V1\TeacherContentController;
+use App\Http\Controllers\Api\V1\TeacherAssignmentController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -124,6 +127,24 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('/learning-sets', [LearningSetController::class, 'index'])->name('api.v1.learning-sets.index');
             Route::post('/learning-sets', [LearningSetController::class, 'store'])->name('api.v1.learning-sets.store');
+
+            Route::prefix('class-sections')->name('api.v1.class-sections.')->group(function (): void {
+                Route::get('/', [ClassSectionController::class, 'index'])->name('index');
+                Route::post('/', [ClassSectionController::class, 'store'])->name('store');
+                Route::get('/{classSectionId}', [ClassSectionController::class, 'show'])->whereUuid('classSectionId')->name('show');
+                Route::patch('/{classSectionId}', [ClassSectionController::class, 'update'])->whereUuid('classSectionId')->name('update');
+                Route::patch('/{classSectionId}/status', [ClassSectionController::class, 'updateStatus'])->whereUuid('classSectionId')->name('status.update');
+                Route::get('/{classSectionId}/memberships', [RosterMembershipController::class, 'index'])->whereUuid('classSectionId')->name('memberships.index');
+                Route::post('/{classSectionId}/memberships', [RosterMembershipController::class, 'store'])->whereUuid('classSectionId')->name('memberships.store');
+                Route::patch('/{classSectionId}/memberships', [RosterMembershipController::class, 'update'])->whereUuid('classSectionId')->name('memberships.update');
+            });
+
+            Route::prefix('teacher-assignments')->name('api.v1.teacher-assignments.')->group(function (): void {
+                Route::get('/', [TeacherAssignmentController::class, 'index'])->name('index');
+                Route::post('/', [TeacherAssignmentController::class, 'store'])->name('store');
+                Route::get('/{teacherAssignmentId}', [TeacherAssignmentController::class, 'show'])->whereUuid('teacherAssignmentId')->name('show');
+                Route::patch('/{teacherAssignmentId}/status', [TeacherAssignmentController::class, 'updateStatus'])->whereUuid('teacherAssignmentId')->name('status.update');
+            });
 
             Route::get('/grades', [GradeController::class, 'index'])->name('api.v1.grades.index');
             Route::post('/grades', [GradeController::class, 'store'])->name('api.v1.grades.store');
