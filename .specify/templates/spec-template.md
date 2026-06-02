@@ -95,6 +95,30 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
+## Architecture & Contract Impact *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Define repository and API impact before planning.
+  If no API or repository impact exists, state that explicitly.
+-->
+
+### Repository Impact
+
+- **Specifications**: [What spec/docs/ADR changes are required, or N/A]
+- **Backend**: [What Laravel API behavior is required, or N/A]
+- **Frontend**: [What Vue SPA behavior is required, or N/A]
+
+### API Contract Impact
+
+- **OpenAPI changes required**: [Yes/No, with operation IDs or contract areas when known]
+- **Approved API boundary**: [Document /api/v1 surface or state that none is exposed]
+- **Response and error semantics**: [Document expected envelopes/statuses or state N/A]
+
+### Tenant and Authorization Impact
+
+- **Tenant-owned data**: [Identify school-owned records and school_id usage, or N/A]
+- **Authorization boundary**: [Identify platform/school/teacher/student/guardian/support roles affected, or N/A]
+
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]

@@ -31,7 +31,13 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **Source-of-truth alignment**: [PASS/FAIL - confirm specs, OpenAPI, docs, and ADRs were read and no behavior is invented]
+- **OpenAPI impact**: [PASS/FAIL/N/A - identify required contract changes before backend exposure or frontend consumption]
+- **Repository boundary**: [PASS/FAIL - confirm backend/frontend/specs responsibilities and excluded repositories]
+- **Tenant and authorization isolation**: [PASS/FAIL/N/A - confirm school context, school_id usage, and role-scope boundaries]
+- **Architecture fit**: [PASS/FAIL - confirm Laravel/Vue/service/resource/policy/DTO patterns and no unrelated refactors]
+- **Verification**: [PASS/FAIL - identify required contract linting, backend tests, tenant/auth tests, and frontend tests if applicable]
+- **Constitution deviations**: [PASS/FAIL - document any deviation in Complexity Tracking]
 
 ## Project Structure
 
