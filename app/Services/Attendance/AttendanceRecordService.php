@@ -48,6 +48,7 @@ final class AttendanceRecordService
             'student_profile_id' => $target['student']->id,
             'academic_period_id' => $target['period']->id,
             'recorded_by_user_id' => $actor->id,
+            'original_recorded_by_user_id' => $actor->id,
             'attendance_date' => $data->attendanceDate,
             'attendance_status' => $data->attendanceStatus,
             'status' => 'active',

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AcademicPeriodController;
+use App\Http\Controllers\Api\V1\AcademicRecordController;
+use App\Http\Controllers\Api\V1\AcademicRecordImportController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
 use App\Http\Controllers\Api\V1\AccountInvitationController;
 use App\Http\Controllers\Api\V1\AccountRecoveryController;
@@ -26,6 +28,7 @@ use App\Http\Controllers\Api\V1\StudentLearningSetController;
 use App\Http\Controllers\Api\V1\StudentProfileController;
 use App\Http\Controllers\Api\V1\StudentTeacherContentController;
 use App\Http\Controllers\Api\V1\TeacherContentController;
+use App\Http\Controllers\Api\V1\TeacherMaterialsController;
 use App\Http\Controllers\Api\V1\TeacherAssignmentController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
@@ -59,6 +62,10 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/schools/{schoolId}/restore', [SchoolLifecycleController::class, 'restore'])->whereUuid('schoolId')->name('api.v1.schools.restore');
 
         Route::middleware('schoolmaster.school_context')->group(function (): void {
+            Route::prefix('teacher-workflow')->group(function (): void {
+                // Phase 2 placeholder group for teacher workflow lifecycle expansion.
+            });
+
             Route::get('/permissions', [PermissionController::class, 'index'])->name('api.v1.permissions.index');
 
             Route::get('/roles', [RoleController::class, 'index'])->name('api.v1.roles.index');
@@ -121,12 +128,28 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('/teacher-content', [TeacherContentController::class, 'index'])->name('api.v1.teacher-content.index');
             Route::post('/teacher-content', [TeacherContentController::class, 'store'])->name('api.v1.teacher-content.store');
+            Route::get('/teacher-content/{contentItemId}', [TeacherMaterialsController::class, 'showContent'])->whereUuid('contentItemId')->name('api.v1.teacher-content.show');
+            Route::patch('/teacher-content/{contentItemId}', [TeacherMaterialsController::class, 'updateContent'])->whereUuid('contentItemId')->name('api.v1.teacher-content.update');
+            Route::patch('/teacher-content/{contentItemId}/status', [TeacherMaterialsController::class, 'updateContentStatus'])->whereUuid('contentItemId')->name('api.v1.teacher-content.status.update');
+            Route::delete('/teacher-content/{contentItemId}', [TeacherMaterialsController::class, 'deleteContent'])->whereUuid('contentItemId')->name('api.v1.teacher-content.delete');
+            Route::post('/teacher-content/{contentItemId}/restore', [TeacherMaterialsController::class, 'restoreContent'])->whereUuid('contentItemId')->name('api.v1.teacher-content.restore');
+            Route::get('/teacher-content/{contentItemId}/download', [TeacherMaterialsController::class, 'downloadContent'])->whereUuid('contentItemId')->name('api.v1.teacher-content.download');
 
             Route::get('/questionnaires', [QuestionnaireController::class, 'index'])->name('api.v1.questionnaires.index');
             Route::post('/questionnaires', [QuestionnaireController::class, 'store'])->name('api.v1.questionnaires.store');
+            Route::get('/questionnaires/{questionnaireId}', [TeacherMaterialsController::class, 'showQuestionnaire'])->whereUuid('questionnaireId')->name('api.v1.questionnaires.show');
+            Route::patch('/questionnaires/{questionnaireId}', [TeacherMaterialsController::class, 'updateQuestionnaire'])->whereUuid('questionnaireId')->name('api.v1.questionnaires.update');
+            Route::patch('/questionnaires/{questionnaireId}/status', [TeacherMaterialsController::class, 'updateQuestionnaireStatus'])->whereUuid('questionnaireId')->name('api.v1.questionnaires.status.update');
+            Route::delete('/questionnaires/{questionnaireId}', [TeacherMaterialsController::class, 'deleteQuestionnaire'])->whereUuid('questionnaireId')->name('api.v1.questionnaires.delete');
+            Route::post('/questionnaires/{questionnaireId}/restore', [TeacherMaterialsController::class, 'restoreQuestionnaire'])->whereUuid('questionnaireId')->name('api.v1.questionnaires.restore');
 
             Route::get('/learning-sets', [LearningSetController::class, 'index'])->name('api.v1.learning-sets.index');
             Route::post('/learning-sets', [LearningSetController::class, 'store'])->name('api.v1.learning-sets.store');
+            Route::get('/learning-sets/{learningSetId}', [LearningSetController::class, 'show'])->whereUuid('learningSetId')->name('api.v1.learning-sets.show');
+            Route::patch('/learning-sets/{learningSetId}', [LearningSetController::class, 'update'])->whereUuid('learningSetId')->name('api.v1.learning-sets.update');
+            Route::patch('/learning-sets/{learningSetId}/status', [LearningSetController::class, 'updateStatus'])->whereUuid('learningSetId')->name('api.v1.learning-sets.status.update');
+            Route::delete('/learning-sets/{learningSetId}', [LearningSetController::class, 'delete'])->whereUuid('learningSetId')->name('api.v1.learning-sets.delete');
+            Route::post('/learning-sets/{learningSetId}/restore', [LearningSetController::class, 'restore'])->whereUuid('learningSetId')->name('api.v1.learning-sets.restore');
 
             Route::prefix('class-sections')->name('api.v1.class-sections.')->group(function (): void {
                 Route::get('/', [ClassSectionController::class, 'index'])->name('index');
@@ -148,9 +171,21 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('/grades', [GradeController::class, 'index'])->name('api.v1.grades.index');
             Route::post('/grades', [GradeController::class, 'store'])->name('api.v1.grades.store');
+            Route::post('/grades/imports', [AcademicRecordImportController::class, 'importGrades'])->name('api.v1.grades.imports');
+            Route::get('/grades/{gradeId}', [AcademicRecordController::class, 'showGrade'])->whereUuid('gradeId')->name('api.v1.grades.show');
+            Route::patch('/grades/{gradeId}/correction', [AcademicRecordController::class, 'correctGrade'])->whereUuid('gradeId')->name('api.v1.grades.correction');
+            Route::patch('/grades/{gradeId}/status', [AcademicRecordController::class, 'updateGradeStatus'])->whereUuid('gradeId')->name('api.v1.grades.status.update');
+            Route::delete('/grades/{gradeId}', [AcademicRecordController::class, 'deleteGrade'])->whereUuid('gradeId')->name('api.v1.grades.delete');
+            Route::post('/grades/{gradeId}/restore', [AcademicRecordController::class, 'restoreGrade'])->whereUuid('gradeId')->name('api.v1.grades.restore');
 
             Route::get('/attendance', [AttendanceController::class, 'index'])->name('api.v1.attendance.index');
             Route::post('/attendance', [AttendanceController::class, 'store'])->name('api.v1.attendance.store');
+            Route::post('/attendance/imports', [AcademicRecordImportController::class, 'importAttendance'])->name('api.v1.attendance.imports');
+            Route::get('/attendance/{attendanceId}', [AcademicRecordController::class, 'showAttendance'])->whereUuid('attendanceId')->name('api.v1.attendance.show');
+            Route::patch('/attendance/{attendanceId}/correction', [AcademicRecordController::class, 'correctAttendance'])->whereUuid('attendanceId')->name('api.v1.attendance.correction');
+            Route::patch('/attendance/{attendanceId}/status', [AcademicRecordController::class, 'updateAttendanceStatus'])->whereUuid('attendanceId')->name('api.v1.attendance.status.update');
+            Route::delete('/attendance/{attendanceId}', [AcademicRecordController::class, 'deleteAttendance'])->whereUuid('attendanceId')->name('api.v1.attendance.delete');
+            Route::post('/attendance/{attendanceId}/restore', [AcademicRecordController::class, 'restoreAttendance'])->whereUuid('attendanceId')->name('api.v1.attendance.restore');
 
             Route::prefix('student')->name('api.v1.student.')->group(function (): void {
                 Route::get('/learning-sets', [StudentLearningSetController::class, 'index'])->name('learning-sets.index');

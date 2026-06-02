@@ -30,6 +30,11 @@ final class QuestionnaireQuestion extends Model
         ];
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
     public function questionnaire(): BelongsTo
     {
         return $this->belongsTo(Questionnaire::class);

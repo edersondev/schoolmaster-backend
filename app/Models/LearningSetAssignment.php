@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'school_id', 'learning_set_id', 'student_profile_id', 'status', 'assigned_at'])]
+#[Fillable(['uuid', 'school_id', 'learning_set_id', 'assignment_mode', 'class_section_id', 'student_profile_id', 'status', 'assigned_at'])]
 final class LearningSetAssignment extends Model
 {
     use BelongsToSchool, HasFactory;
@@ -30,6 +30,11 @@ final class LearningSetAssignment extends Model
         return ['assigned_at' => 'datetime'];
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
     public function learningSet(): BelongsTo
     {
         return $this->belongsTo(LearningSet::class);
@@ -38,6 +43,11 @@ final class LearningSetAssignment extends Model
     public function studentProfile(): BelongsTo
     {
         return $this->belongsTo(StudentProfile::class);
+    }
+
+    public function classSection(): BelongsTo
+    {
+        return $this->belongsTo(ClassSection::class);
     }
 
     public function isActive(): bool

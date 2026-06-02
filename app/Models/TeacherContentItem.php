@@ -13,7 +13,24 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'school_id', 'owner_user_id', 'folder_id', 'title', 'content_type', 'declared_content_type', 'detected_content_type', 'file_size_bytes', 'storage_path', 'scan_status', 'status'])]
+#[Fillable([
+    'uuid',
+    'school_id',
+    'owner_user_id',
+    'folder_id',
+    'title',
+    'description',
+    'content_type',
+    'declared_content_type',
+    'detected_content_type',
+    'file_size_bytes',
+    'storage_path',
+    'scan_status',
+    'status',
+    'deleted_by_user_id',
+    'restored_at',
+    'restored_by_user_id',
+])]
 final class TeacherContentItem extends Model
 {
     use BelongsToSchool, HasFactory, SoftDeletes;
@@ -29,7 +46,16 @@ final class TeacherContentItem extends Model
 
     protected function casts(): array
     {
-        return ['file_size_bytes' => 'integer'];
+        return [
+            'file_size_bytes' => 'integer',
+            'deleted_at' => 'datetime',
+            'restored_at' => 'datetime',
+        ];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
     }
 
     public function owner(): BelongsTo
@@ -44,7 +70,14 @@ final class TeacherContentItem extends Model
 
     public function learningSetEntries(): HasMany
     {
-        return $this->hasMany(LearningSetEntry::class, 'entry_reference_id');
+        return $this->hasMany(LearningSetEntry::class, 'entry_reference_id')
+            ->where('entry_type', 'content_item');
+    }
+
+    public function auditEvents(): HasMany
+    {
+        return $this->hasMany(AuditEvent::class, 'affected_resource_id', 'uuid')
+            ->where('affected_resource_type', self::class);
     }
 
     public function isAvailable(): bool

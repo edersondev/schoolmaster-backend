@@ -20,9 +20,9 @@ final class TeacherWorkflowBlockedOperationsTest extends TestCase
 
         foreach ([
             ['getJson', '/api/v1/teacher-content-folders'],
-            ['patchJson', '/api/v1/teacher-content/'.fake()->uuid()],
-            ['getJson', '/api/v1/teacher-content/'.fake()->uuid().'/download'],
-            ['patchJson', '/api/v1/questionnaires/'.fake()->uuid()],
+            ['postJson', '/api/v1/teacher-content/'.fake()->uuid().'/publish'],
+            ['postJson', '/api/v1/teacher-content/'.fake()->uuid().'/archive'],
+            ['postJson', '/api/v1/questionnaires/'.fake()->uuid().'/duplicate'],
             ['getJson', '/api/v1/classrooms'],
         ] as [$method, $path]) {
             $this->withToken($token)

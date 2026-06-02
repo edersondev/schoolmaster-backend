@@ -78,6 +78,7 @@ final class LearningSetService
                 $learningSet->assignments()->create([
                     'school_id' => $school->id,
                     'student_profile_id' => $student->id,
+                    'assignment_mode' => 'legacy_direct',
                     'status' => 'active',
                     'assigned_at' => now(),
                 ]);

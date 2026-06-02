@@ -28,6 +28,11 @@ final class LearningSetEntry extends Model
         return ['sequence' => 'integer'];
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
     public function learningSet(): BelongsTo
     {
         return $this->belongsTo(LearningSet::class);

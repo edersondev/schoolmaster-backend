@@ -13,6 +13,7 @@ final readonly class CreateTeacherContentData
         public string $contentType,
         public UploadedFile $file,
         public ?string $folderId,
+        public ?string $description,
     ) {}
 
     public static function fromArray(array $data): self
@@ -22,6 +23,7 @@ final readonly class CreateTeacherContentData
             contentType: $data['content_type'],
             file: $data['file'],
             folderId: $data['folder_id'] ?? null,
+            description: $data['description'] ?? null,
         );
     }
 }
