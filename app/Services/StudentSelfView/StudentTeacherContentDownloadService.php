@@ -31,7 +31,7 @@ final class StudentTeacherContentDownloadService
                 ->where('entry_type', 'content_item')
                 ->whereHas('learningSet', fn ($learningSets) => $learningSets
                     ->where('school_id', $school->id)
-                    ->where('status', 'published')
+                    ->whereIn('status', ['published', 'active'])
                     ->whereHas('assignments', fn ($assignments) => $assignments
                         ->where('student_profile_id', $student->id)
                         ->where('status', 'active'))))

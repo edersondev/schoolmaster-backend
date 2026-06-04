@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Repositories\TeacherWorkflow\TeacherWorkflowLookupRepository;
 use App\Services\LearningSets\LearningSetEntryValidator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -70,26 +71,32 @@ final class LearningSetService
             if (is_array($rosterAssignment)) {
                 $classSection = $this->activeClassSection($rosterAssignment['class_section_id'], $learningSet->school_id);
                 $this->assertRosterAssignmentAuthority($actor, $classSection);
-                $membership = $classSection->rosterMemberships()->where('status', 'active')->first();
-                $existingAssignment = $learningSet->assignments()
-                    ->where('student_profile_id', $membership->student_profile_id)
-                    ->first();
-
+                $studentProfileIds = $this->activeRosterStudentProfileIds($classSection);
                 $learningSet->assignments()->where('status', 'active')->update(['status' => 'inactive']);
 
-                $assignmentData = [
-                    'school_id' => $learningSet->school_id,
-                    'assignment_mode' => 'roster',
-                    'class_section_id' => $classSection->id,
-                    'student_profile_id' => $membership->student_profile_id,
-                    'status' => 'active',
-                    'assigned_at' => now(),
-                ];
+                /** @var Collection<int, \App\Models\LearningSetAssignment> $existingAssignments */
+                $existingAssignments = $learningSet->assignments()
+                    ->whereIn('student_profile_id', $studentProfileIds->all())
+                    ->get()
+                    ->keyBy('student_profile_id');
 
-                if ($existingAssignment !== null) {
-                    $existingAssignment->forceFill($assignmentData)->save();
-                } else {
-                    $learningSet->assignments()->create($assignmentData);
+                foreach ($studentProfileIds as $studentProfileId) {
+                    $assignmentData = [
+                        'school_id' => $learningSet->school_id,
+                        'assignment_mode' => 'roster',
+                        'class_section_id' => $classSection->id,
+                        'student_profile_id' => $studentProfileId,
+                        'status' => 'active',
+                        'assigned_at' => now(),
+                    ];
+
+                    $existingAssignment = $existingAssignments->get($studentProfileId);
+
+                    if ($existingAssignment !== null) {
+                        $existingAssignment->forceFill($assignmentData)->save();
+                    } else {
+                        $learningSet->assignments()->create($assignmentData);
+                    }
                 }
             }
 
@@ -205,5 +212,17 @@ final class LearningSetService
         if (! $hasActiveAssignment) {
             throw new \Illuminate\Auth\Access\AuthorizationException('Teachers require an active assignment to update roster-aware learning-set assignments.');
         }
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    private function activeRosterStudentProfileIds(ClassSection $classSection): Collection
+    {
+        return $classSection->rosterMemberships()
+            ->where('status', 'active')
+            ->pluck('student_profile_id')
+            ->unique()
+            ->values();
     }
 }

@@ -15,7 +15,7 @@ final class StudentLearningSetTimelineResource extends JsonResource
             'id' => $this->uuid,
             'academic_period_id' => $this->academicPeriod?->uuid,
             'title' => $this->title,
-            'status' => $this->status,
+            'status' => in_array($this->status, ['published', 'active'], true) ? 'published' : $this->status,
             'published_at' => $this->published_at?->toISOString(),
             'entries' => StudentLearningSetEntryResource::collection($this->whenLoaded('entries'))->resolve(),
         ];
