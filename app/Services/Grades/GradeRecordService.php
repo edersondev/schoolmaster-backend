@@ -48,6 +48,7 @@ final class GradeRecordService
             'student_profile_id' => $target['student']->id,
             'academic_period_id' => $target['period']->id,
             'recorded_by_user_id' => $actor->id,
+            'original_recorded_by_user_id' => $actor->id,
             'grade_value' => $data->gradeValue,
             'grade_label' => $data->gradeLabel,
             'status' => 'active',

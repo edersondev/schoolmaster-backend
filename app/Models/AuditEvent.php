@@ -21,6 +21,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 final class AuditEvent extends Model
 {
+    public const TEACHER_WORKFLOW_EVENT_TYPES = [
+        'teacher_workflow.lifecycle',
+        'teacher_workflow.download',
+        'teacher_workflow.correction',
+        'teacher_workflow.import',
+        'teacher_workflow.validation',
+        'teacher_workflow.conflict',
+    ];
+
     public $timestamps = false;
 
     protected function casts(): array
@@ -39,5 +48,17 @@ final class AuditEvent extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function isTeacherWorkflowEvent(): bool
+    {
+        return in_array($this->event_type, self::TEACHER_WORKFLOW_EVENT_TYPES, true);
+    }
+
+    public function targetIdentifier(): ?string
+    {
+        return $this->affected_resource_type !== null && $this->affected_resource_id !== null
+            ? $this->affected_resource_type.':'.$this->affected_resource_id
+            : null;
     }
 }

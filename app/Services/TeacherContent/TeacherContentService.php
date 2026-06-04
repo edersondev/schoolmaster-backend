@@ -80,6 +80,7 @@ final class TeacherContentService
                     'owner_user_id' => $actor->id,
                     'folder_id' => $folder?->id,
                     'title' => $data->title,
+                    'description' => $data->description,
                     'content_type' => $data->contentType,
                     'declared_content_type' => $fileData['declared_content_type'],
                     'detected_content_type' => $fileData['detected_content_type'],

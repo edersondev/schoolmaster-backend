@@ -16,6 +16,7 @@ final class QuestionnaireResource extends JsonResource
             'school_id' => $this->school?->uuid,
             'owner_user_id' => $this->owner?->uuid,
             'title' => $this->title,
+            'description' => $this->description,
             'status' => $this->status,
             'questions' => QuestionnaireQuestionResource::collection($this->whenLoaded('questions'))->resolve(),
         ];

@@ -14,6 +14,7 @@ final class CreateTeacherContentRequest extends ApiFormRequest
         return [
             'folder_id' => ['nullable', 'uuid'],
             'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:5000'],
             'content_type' => ['required', 'string', Rule::in(['pdf', 'image', 'text', 'office_document'])],
             'file' => ['required', 'file', 'max:25600'],
         ];

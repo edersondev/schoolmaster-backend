@@ -33,7 +33,7 @@ final class StudentLearningTimelineService
             ->with(['academicPeriod', 'entries.contentItem', 'entries.questionnaire'])
             ->where('school_id', $school->id)
             ->where('academic_period_id', $period->id)
-            ->where('status', 'published')
+            ->whereIn('status', ['published', 'active'])
             ->whereHas('assignments', fn ($query) => $query
                 ->where('student_profile_id', $student->id)
                 ->where('status', 'active'))

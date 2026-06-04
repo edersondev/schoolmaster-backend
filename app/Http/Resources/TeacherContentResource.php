@@ -17,6 +17,7 @@ final class TeacherContentResource extends JsonResource
             'owner_user_id' => $this->owner?->uuid,
             'folder_id' => $this->folder?->uuid,
             'title' => $this->title,
+            'description' => $this->description,
             'content_type' => $this->content_type,
             'declared_content_type' => $this->declared_content_type,
             'detected_content_type' => $this->detected_content_type,

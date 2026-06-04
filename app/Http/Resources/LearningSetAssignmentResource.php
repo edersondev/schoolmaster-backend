@@ -15,7 +15,9 @@ final class LearningSetAssignmentResource extends JsonResource
             'id' => $this->uuid,
             'school_id' => $this->school?->uuid,
             'learning_set_id' => $this->learningSet?->uuid,
-            'student_profile_id' => $this->studentProfile?->uuid,
+            'assignment_mode' => $this->assignment_mode ?? 'legacy_direct',
+            'class_section_id' => $this->classSection?->uuid,
+            'student_profile_id' => ($this->assignment_mode ?? 'legacy_direct') === 'roster' ? null : $this->studentProfile?->uuid,
             'status' => $this->status,
             'assigned_at' => $this->assigned_at?->toISOString(),
         ];

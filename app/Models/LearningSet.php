@@ -13,7 +13,20 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'school_id', 'owner_user_id', 'academic_period_id', 'title', 'published_at', 'status'])]
+#[Fillable([
+    'uuid',
+    'school_id',
+    'owner_user_id',
+    'academic_period_id',
+    'title',
+    'description',
+    'due_at',
+    'published_at',
+    'status',
+    'deleted_by_user_id',
+    'restored_at',
+    'restored_by_user_id',
+])]
 final class LearningSet extends Model
 {
     use BelongsToSchool, HasFactory, SoftDeletes;
@@ -29,7 +42,17 @@ final class LearningSet extends Model
 
     protected function casts(): array
     {
-        return ['published_at' => 'datetime'];
+        return [
+            'published_at' => 'datetime',
+            'due_at' => 'datetime',
+            'deleted_at' => 'datetime',
+            'restored_at' => 'datetime',
+        ];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
     }
 
     public function owner(): BelongsTo
@@ -50,6 +73,12 @@ final class LearningSet extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(LearningSetAssignment::class);
+    }
+
+    public function auditEvents(): HasMany
+    {
+        return $this->hasMany(AuditEvent::class, 'affected_resource_id', 'uuid')
+            ->where('affected_resource_type', self::class);
     }
 
     public function isPublished(): bool

@@ -37,6 +37,7 @@ final class TeacherWorkflowFactory
             'school_id' => $school->id,
             'owner_user_id' => $owner->id,
             'title' => 'Teacher Content',
+            'description' => $attributes['description'] ?? null,
             'content_type' => 'pdf',
             'declared_content_type' => 'application/pdf',
             'detected_content_type' => 'application/pdf',
@@ -53,6 +54,7 @@ final class TeacherWorkflowFactory
             'school_id' => $school->id,
             'owner_user_id' => $owner->id,
             'title' => 'Quiz',
+            'description' => $attributes['description'] ?? null,
             'status' => 'active',
         ]);
 
