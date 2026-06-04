@@ -55,7 +55,16 @@ final class GuardianService
             ]);
 
             if ($studentProfiles->isNotEmpty()) {
-                $guardian->studentProfiles()->sync($studentProfiles->pluck('id')->all());
+                $guardian->studentProfiles()->sync(
+                    $studentProfiles->mapWithKeys(fn (StudentProfile $profile): array => [
+                        $profile->id => [
+                            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                            'school_id' => $school->id,
+                            'relationship_type' => $data->relationshipType,
+                            'status' => 'active',
+                        ],
+                    ])->all(),
+                );
             }
 
             return $guardian->load('school');

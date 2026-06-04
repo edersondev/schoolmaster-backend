@@ -15,7 +15,7 @@ final class LearningSetContractTest extends TestCase
 
     public function test_openapi_documents_learning_set_operations(): void
     {
-        $contract = file_get_contents(base_path('specs/api/openapi.yaml'));
+        $contract = file_get_contents(base_path('specs/specs/001-schoolmaster-platform/contracts/openapi.yaml'));
 
         foreach (['getLearningSet', 'updateLearningSet', 'updateLearningSetStatus', 'deleteLearningSet', 'restoreLearningSet'] as $operationId) {
             $this->assertStringContainsString("operationId: $operationId", $contract);

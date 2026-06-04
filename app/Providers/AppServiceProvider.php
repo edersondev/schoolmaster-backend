@@ -24,6 +24,7 @@ use App\Policies\AcademicRecordPolicy;
 use App\Policies\AcademicRecordImportPolicy;
 use App\Policies\ClassSectionPolicy;
 use App\Policies\EnrollmentHistoryPolicy;
+use App\Policies\GuardianSelfServicePolicy;
 use App\Policies\LearningSetPolicy;
 use App\Policies\QuestionnairePolicy;
 use App\Policies\StudentProfilePolicy;
@@ -70,5 +71,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(GradeRecord::class, AcademicRecordPolicy::class);
         Gate::policy(AttendanceRecord::class, AcademicRecordPolicy::class);
         Gate::policy(ImportRun::class, AcademicRecordImportPolicy::class);
+        Gate::define('guardian-self-service.view', [GuardianSelfServicePolicy::class, 'view']);
     }
 }

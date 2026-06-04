@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\BulkAdministrationLifecycleController;
 use App\Http\Controllers\Api\V1\ClassSectionController;
 use App\Http\Controllers\Api\V1\GradeController;
 use App\Http\Controllers\Api\V1\GuardianController;
+use App\Http\Controllers\Api\V1\Guardian\GuardianSelfServiceController;
 use App\Http\Controllers\Api\V1\LearningSetController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PermissionController;
@@ -111,6 +112,8 @@ Route::prefix('v1')->group(function (): void {
             Route::get('/guardians', [GuardianController::class, 'index'])->name('api.v1.guardians.index');
             Route::post('/guardians', [GuardianController::class, 'store'])->name('api.v1.guardians.store');
             Route::post('/guardians/bulk-lifecycle', [BulkAdministrationLifecycleController::class, 'guardians'])->name('api.v1.guardians.bulk-lifecycle');
+            Route::post('/guardians/{guardianId}/user-links', [GuardianController::class, 'createUserLink'])->whereUuid('guardianId')->name('api.v1.guardians.user-links.store');
+            Route::post('/guardians/{guardianId}/user-links/{guardianUserLinkId}/deactivate', [GuardianController::class, 'deactivateUserLink'])->whereUuid('guardianId')->whereUuid('guardianUserLinkId')->name('api.v1.guardians.user-links.deactivate');
             Route::get('/guardians/{guardianId}', [AdministrationLifecycleController::class, 'showGuardian'])->whereUuid('guardianId')->name('api.v1.guardians.show');
             Route::patch('/guardians/{guardianId}', [AdministrationLifecycleController::class, 'updateGuardian'])->whereUuid('guardianId')->name('api.v1.guardians.update');
             Route::post('/guardians/{guardianId}/activate', [AdministrationLifecycleController::class, 'activateGuardian'])->whereUuid('guardianId')->name('api.v1.guardians.activate');
@@ -192,6 +195,13 @@ Route::prefix('v1')->group(function (): void {
                 Route::get('/grades', [StudentGradeController::class, 'index'])->name('grades.index');
                 Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance.index');
                 Route::get('/teacher-content/{contentItemId}/download', [StudentTeacherContentController::class, 'download'])->name('teacher-content.download');
+            });
+
+            Route::prefix('guardian')->name('api.v1.guardian.')->group(function (): void {
+                Route::get('/students', [GuardianSelfServiceController::class, 'index'])->name('students.index');
+                Route::get('/students/{studentProfileId}', [GuardianSelfServiceController::class, 'show'])->whereUuid('studentProfileId')->name('students.show');
+                Route::get('/students/{studentProfileId}/academics', [GuardianSelfServiceController::class, 'academics'])->whereUuid('studentProfileId')->name('students.academics');
+                Route::get('/students/{studentProfileId}/contacts', [GuardianSelfServiceController::class, 'contacts'])->whereUuid('studentProfileId')->name('students.contacts');
             });
 
             Route::prefix('reports')->name('api.v1.reports.')->group(function (): void {

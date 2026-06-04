@@ -15,7 +15,7 @@ final class TeacherMaterialsContractTest extends TestCase
 
     public function test_openapi_documents_teacher_material_operations(): void
     {
-        $contract = file_get_contents(base_path('specs/api/openapi.yaml'));
+        $contract = file_get_contents(base_path('specs/specs/001-schoolmaster-platform/contracts/openapi.yaml'));
 
         foreach ([
             'getTeacherContent',
