@@ -27,6 +27,7 @@ final class ReportOutputWriter
                 'generated_at' => $generatedAt,
                 'expires_at' => $this->availability->expiresAt($generatedAt),
                 'status' => 'available',
+                'availability' => 'available',
             ],
         );
     }

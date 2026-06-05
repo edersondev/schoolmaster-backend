@@ -26,6 +26,7 @@ final class StudentReportingValidationContractTest extends TestCase
             ->postJson('/api/v1/reports', [
                 'report_type' => 'attendance',
                 'filters' => ['academic_period_id' => $period->uuid, 'custom' => 'nope'],
+                'output_formats' => ['pdf', 'csv'],
             ])
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'validation_failed');

@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\LearningSetController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\QuestionnaireController;
+use App\Http\Controllers\Api\V1\ReportDefinitionController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\RosterMembershipController;
@@ -207,7 +208,24 @@ Route::prefix('v1')->group(function (): void {
             Route::prefix('reports')->name('api.v1.reports.')->group(function (): void {
                 Route::get('/', [ReportController::class, 'index'])->name('index');
                 Route::post('/', [ReportController::class, 'store'])->name('store');
+                Route::post('/{reportRunId}/retry', [ReportController::class, 'retry'])->whereUuid('reportRunId')->name('retry');
+                Route::post('/{reportRunId}/cancel', [ReportController::class, 'cancel'])->whereUuid('reportRunId')->name('cancel');
                 Route::get('/{reportRunId}/download', [ReportController::class, 'download'])->name('download');
+                Route::delete('/{reportRunId}', [ReportController::class, 'delete'])->whereUuid('reportRunId')->name('delete');
+                Route::post('/{reportRunId}/restore', [ReportController::class, 'restore'])->whereUuid('reportRunId')->name('restore');
+            });
+
+            Route::get('/report-catalog', [ReportDefinitionController::class, 'catalog'])->name('api.v1.report-catalog.index');
+
+            Route::prefix('report-definitions')->name('api.v1.report-definitions.')->group(function (): void {
+                Route::get('/', [ReportDefinitionController::class, 'index'])->name('index');
+                Route::post('/', [ReportDefinitionController::class, 'store'])->name('store');
+                Route::get('/{reportDefinitionId}', [ReportDefinitionController::class, 'show'])->whereUuid('reportDefinitionId')->name('show');
+                Route::patch('/{reportDefinitionId}', [ReportDefinitionController::class, 'update'])->whereUuid('reportDefinitionId')->name('update');
+                Route::post('/{reportDefinitionId}/activate', [ReportDefinitionController::class, 'activate'])->whereUuid('reportDefinitionId')->name('activate');
+                Route::post('/{reportDefinitionId}/deactivate', [ReportDefinitionController::class, 'deactivate'])->whereUuid('reportDefinitionId')->name('deactivate');
+                Route::delete('/{reportDefinitionId}', [ReportDefinitionController::class, 'delete'])->whereUuid('reportDefinitionId')->name('delete');
+                Route::post('/{reportDefinitionId}/restore', [ReportDefinitionController::class, 'restore'])->whereUuid('reportDefinitionId')->name('restore');
             });
         });
     });

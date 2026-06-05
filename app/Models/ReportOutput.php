@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Reports\ReportOutputAvailability;
 use App\Models\Concerns\BelongsToSchool;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'school_id', 'report_run_id', 'format', 'storage_path', 'generated_at', 'expires_at', 'status'])]
+#[Fillable(['uuid', 'school_id', 'report_run_id', 'format', 'storage_path', 'generated_at', 'expires_at', 'status', 'availability', 'failure_reason_code'])]
 final class ReportOutput extends Model
 {
     use BelongsToSchool, HasFactory, SoftDeletes;
@@ -23,6 +24,7 @@ final class ReportOutput extends Model
         self::creating(function (ReportOutput $output): void {
             $output->uuid ??= (string) Str::uuid();
             $output->status ??= 'available';
+            $output->availability ??= $output->status ?? ReportOutputAvailability::Available->value;
         });
     }
 
@@ -31,6 +33,7 @@ final class ReportOutput extends Model
         return [
             'generated_at' => 'datetime',
             'expires_at' => 'datetime',
+            'availability' => ReportOutputAvailability::class,
         ];
     }
 
@@ -43,6 +46,8 @@ final class ReportOutput extends Model
     {
         $now ??= now();
 
-        return $this->status !== 'available' || $this->expires_at->lte($now);
+        return $this->status !== 'available'
+            || $this->availability !== ReportOutputAvailability::Available
+            || $this->expires_at->lte($now);
     }
 }
