@@ -62,6 +62,12 @@ operation IDs:
 - `createAcademicPeriod`
 - `listGuardians`
 - `createGuardian`
+- `createGuardianUserLink`
+- `deactivateGuardianUserLink`
+- `listGuardianStudents`
+- `getGuardianStudent`
+- `getGuardianStudentAcademics`
+- `getGuardianStudentContacts`
 
 Operational framework routes, such as Laravel health checks, are not product
 feature routes. Product Blade views are not part of this backend.

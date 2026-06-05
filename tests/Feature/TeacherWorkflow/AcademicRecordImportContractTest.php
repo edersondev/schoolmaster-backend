@@ -18,7 +18,7 @@ final class AcademicRecordImportContractTest extends TestCase
 
     public function test_openapi_documents_grade_and_attendance_import_operations(): void
     {
-        $contract = file_get_contents(base_path('specs/api/openapi.yaml'));
+        $contract = file_get_contents(base_path('specs/specs/001-schoolmaster-platform/contracts/openapi.yaml'));
 
         foreach (['importGrades', 'importAttendance', 'GradeImportRequest', 'AttendanceImportRequest', 'ImportRun'] as $contractToken) {
             $this->assertStringContainsString($contractToken, $contract);

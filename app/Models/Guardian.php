@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -31,5 +32,15 @@ final class Guardian extends Model
             ->using(GuardianAssociation::class)
             ->withPivot(['uuid', 'school_id', 'relationship_type', 'status'])
             ->withTimestamps();
+    }
+
+    public function userLinks(): HasMany
+    {
+        return $this->hasMany(GuardianUserLink::class);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active' && $this->deleted_at === null;
     }
 }

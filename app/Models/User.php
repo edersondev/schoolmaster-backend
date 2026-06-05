@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -62,6 +63,11 @@ class User extends Authenticatable
         return $this->hasOne(StudentProfile::class);
     }
 
+    public function guardianUserLinks(): HasMany
+    {
+        return $this->hasMany(GuardianUserLink::class);
+    }
+
     public function permissions()
     {
         return Permission::query()
@@ -94,5 +100,10 @@ class User extends Authenticatable
     public function isPlatformUser(): bool
     {
         return $this->school_id === null;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active' && $this->deleted_at === null;
     }
 }

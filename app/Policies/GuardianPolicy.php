@@ -18,4 +18,9 @@ final class GuardianPolicy
     {
         return $user->hasSchoolPermission('guardians.manage', $school->id);
     }
+
+    public function manageUserLinks(User $user, School $school): bool
+    {
+        return $user->hasSchoolPermission('guardians.manage', $school->id);
+    }
 }

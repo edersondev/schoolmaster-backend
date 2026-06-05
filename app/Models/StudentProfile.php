@@ -55,6 +55,11 @@ final class StudentProfile extends Model
             ->withTimestamps();
     }
 
+    public function guardianAssociations(): HasMany
+    {
+        return $this->hasMany(GuardianAssociation::class);
+    }
+
     public function enrollmentHistories(): HasMany
     {
         return $this->hasMany(EnrollmentHistory::class);

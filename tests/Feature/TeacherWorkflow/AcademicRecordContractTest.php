@@ -20,7 +20,7 @@ final class AcademicRecordContractTest extends TestCase
 
     public function test_openapi_documents_academic_record_operations(): void
     {
-        $contract = file_get_contents(base_path('specs/api/openapi.yaml'));
+        $contract = file_get_contents(base_path('specs/specs/001-schoolmaster-platform/contracts/openapi.yaml'));
 
         foreach (['getGrade', 'correctGrade', 'updateGradeStatus', 'deleteGrade', 'restoreGrade', 'getAttendance', 'correctAttendance', 'updateAttendanceStatus', 'deleteAttendance', 'restoreAttendance'] as $operationId) {
             $this->assertStringContainsString("operationId: $operationId", $contract);
