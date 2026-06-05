@@ -11,6 +11,6 @@ final class GuardianSelfServicePolicy
 {
     public function view(User $user, School $school): bool
     {
-        return $user->isActive() && ($user->school_id === null || $user->school_id === $school->id);
+        return $user->isActive() && $user->school_id === $school->id;
     }
 }

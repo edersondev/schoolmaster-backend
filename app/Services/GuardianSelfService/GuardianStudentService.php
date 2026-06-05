@@ -20,7 +20,11 @@ final class GuardianStudentService
             ->join('guardian_student_profile', 'guardian_student_profile.student_profile_id', '=', 'student_profiles.id')
             ->where('student_profiles.school_id', $actor->school->id)
             ->where('student_profiles.status', 'active')
-            ->where('guardian_student_profile.school_id', $actor->school->id)
+            ->where(function ($query) use ($actor): void {
+                $query
+                    ->where('guardian_student_profile.school_id', $actor->school->id)
+                    ->orWhereNull('guardian_student_profile.school_id');
+            })
             ->where('guardian_student_profile.guardian_id', $actor->guardian->id)
             ->where('guardian_student_profile.status', 'active')
             ->orderBy('student_profiles.last_name')

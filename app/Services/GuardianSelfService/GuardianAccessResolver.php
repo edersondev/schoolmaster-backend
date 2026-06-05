@@ -58,7 +58,11 @@ final class GuardianAccessResolver
         }
 
         $association = GuardianAssociation::query()
-            ->where('school_id', $actor->school->id)
+            ->where(function ($query) use ($actor): void {
+                $query
+                    ->where('school_id', $actor->school->id)
+                    ->orWhereNull('school_id');
+            })
             ->where('guardian_id', $actor->guardian->id)
             ->where('student_profile_id', $student->id)
             ->where('status', 'active')

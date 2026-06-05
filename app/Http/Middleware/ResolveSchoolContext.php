@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Exceptions\TenantContextException;
+use App\Models\School;
+use App\Models\User;
 use App\Services\GuardianSelfService\GuardianAuditService;
 use App\Services\TenantContextResolver;
 use Closure;
@@ -26,11 +28,14 @@ final class ResolveSchoolContext
             $action = $this->guardianSelfServiceAction($request);
 
             if ($action !== null) {
+                $actor = $request->attributes->get('auth_user');
+
                 app(GuardianAuditService::class)->denied(
                     $request,
                     $action,
                     'tenant_context_unresolved',
-                    $request->attributes->get('auth_user'),
+                    $actor,
+                    $this->schoolForAudit($actor),
                 );
             }
 
@@ -54,5 +59,16 @@ final class ResolveSchoolContext
             $path === 'api/v1/guardian/students' => 'student_list',
             default => 'student_detail',
         };
+    }
+
+    private function schoolForAudit(mixed $actor): ?School
+    {
+        if (! $actor instanceof User || $actor->school_id === null) {
+            return null;
+        }
+
+        $actor->loadMissing('school');
+
+        return $actor->school;
     }
 }

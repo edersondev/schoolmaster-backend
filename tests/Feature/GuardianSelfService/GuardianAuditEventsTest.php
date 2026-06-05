@@ -54,7 +54,7 @@ final class GuardianAuditEventsTest extends GuardianSelfServiceTestCase
         $this->assertDatabaseHas('audit_events', [
             'event_type' => 'guardian_self_service.student_list',
             'actor_user_id' => $guardianUser->id,
-            'school_id' => null,
+            'school_id' => $school->id,
             'outcome' => 'denied',
         ]);
 
@@ -64,6 +64,43 @@ final class GuardianAuditEventsTest extends GuardianSelfServiceTestCase
 
         $this->assertDatabaseMissing('audit_events', [
             'tenant_safe_metadata->contact_email' => $guardian->contact_email,
+        ]);
+    }
+
+    public function test_platform_guardian_denials_only_record_resolved_school_when_safe(): void
+    {
+        [$school, $admin, $guardian] = $this->guardianContext();
+        $platformUser = \App\Models\User::factory()->create(['school_id' => null, 'status' => 'active']);
+
+        \App\Models\GuardianUserLink::query()->create([
+            'school_id' => $school->id,
+            'guardian_id' => $guardian->id,
+            'user_id' => $platformUser->id,
+            'created_by_user_id' => $admin->id,
+            'status' => 'active',
+        ]);
+
+        $this->withToken($this->bearerTokenFor($platformUser))
+            ->getJson('/api/v1/guardian/students')
+            ->assertForbidden();
+
+        $this->withToken($this->bearerTokenFor($platformUser))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/guardian/students')
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('audit_events', [
+            'event_type' => 'guardian_self_service.student_list',
+            'actor_user_id' => $platformUser->id,
+            'school_id' => null,
+            'outcome' => 'denied',
+        ]);
+
+        $this->assertDatabaseHas('audit_events', [
+            'event_type' => 'guardian_self_service.student_list',
+            'actor_user_id' => $platformUser->id,
+            'school_id' => $school->id,
+            'outcome' => 'denied',
         ]);
     }
 }

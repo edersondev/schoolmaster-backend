@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\GuardianSelfService;
 
+use App\Models\GuardianUserLink;
 use App\Models\School;
 use App\Models\User;
 
@@ -33,5 +34,24 @@ final class GuardianTenantContextTest extends GuardianSelfServiceTestCase
                 ->getJson($uri)
                 ->assertSuccessful();
         }
+    }
+
+    public function test_platform_scoped_user_cannot_use_guardian_self_service_even_with_linked_record(): void
+    {
+        [$school, $admin, $guardian, , $student] = $this->guardianContext();
+        $platformUser = User::factory()->create(['school_id' => null, 'status' => 'active']);
+
+        GuardianUserLink::query()->create([
+            'school_id' => $school->id,
+            'guardian_id' => $guardian->id,
+            'user_id' => $platformUser->id,
+            'created_by_user_id' => $admin->id,
+            'status' => 'active',
+        ]);
+
+        $this->withToken($this->bearerTokenFor($platformUser))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson("/api/v1/guardian/students/{$student->uuid}")
+            ->assertForbidden();
     }
 }
