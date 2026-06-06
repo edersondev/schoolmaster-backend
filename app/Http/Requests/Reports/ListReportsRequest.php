@@ -9,6 +9,21 @@ use Illuminate\Validation\Rule;
 
 final class ListReportsRequest extends ApiFormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('include_deleted')) {
+            return;
+        }
+
+        $this->merge([
+            'include_deleted' => filter_var(
+                $this->input('include_deleted'),
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE,
+            ),
+        ]);
+    }
+
     public function rules(): array
     {
         return [

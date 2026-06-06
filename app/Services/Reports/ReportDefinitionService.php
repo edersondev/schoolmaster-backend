@@ -30,7 +30,7 @@ final class ReportDefinitionService
             ->with(['school', 'creator', 'updater'])
             ->where('school_id', $context->school->id);
 
-        if ((bool) ($filters['include_deleted'] ?? false)) {
+        if ($this->includeDeleted($filters)) {
             $query->withTrashed();
         }
 
@@ -110,6 +110,11 @@ final class ReportDefinitionService
     {
         $definition = $this->find($context, $uuid, withTrashed: true);
         $this->authorize($context);
+
+        if (! $definition->trashed()) {
+            throw new ConflictException('Only deleted report definitions can be restored.');
+        }
+
         $this->assertNameAvailable($context, $definition->name, $definition->id);
         $definition->restore();
         $definition->update(['lifecycle_state' => ReportDefinitionState::Inactive->value]);
@@ -157,6 +162,11 @@ final class ReportDefinitionService
         if (! $context->actor->hasSchoolPermission('reports.definitions.manage', $context->school->id)) {
             abort(403, 'The authenticated user lacks permission for this action.');
         }
+    }
+
+    private function includeDeleted(array $filters): bool
+    {
+        return filter_var($filters['include_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
     }
 
     private function assertNameAvailable(ReportActorContext $context, string $name, ?int $ignoreId = null): void

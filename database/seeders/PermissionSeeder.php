@@ -61,6 +61,8 @@ final class PermissionSeeder extends Seeder
             ['code' => 'student_self_view.view', 'name' => 'View own student records', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'reports.view', 'name' => 'View school reports', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'reports.request', 'name' => 'Request school reports', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'reports.lifecycle', 'name' => 'Manage school report lifecycle', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'reports.definitions.manage', 'name' => 'Manage school report definitions', 'scope' => 'school', 'status' => 'active'],
         ];
     }
 }

@@ -11,7 +11,10 @@ final class UpdateReportDefinitionRequest extends CreateReportDefinitionRequest
         $rules = parent::rules();
 
         foreach ($rules as $field => $fieldRules) {
-            $rules[$field] = array_map(fn (string $rule): string => $rule === 'required' ? 'sometimes' : $rule, $fieldRules);
+            $rules[$field] = array_map(
+                fn (mixed $rule): mixed => $rule === 'required' ? 'sometimes' : $rule,
+                $fieldRules,
+            );
         }
 
         return $rules;

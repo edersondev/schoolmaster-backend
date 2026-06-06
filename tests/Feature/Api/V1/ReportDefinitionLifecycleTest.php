@@ -55,6 +55,24 @@ final class ReportDefinitionLifecycleTest extends TestCase
             ->assertJsonPath('data.lifecycle_state', 'inactive');
     }
 
+    public function test_restore_conflicts_for_non_deleted_definition(): void
+    {
+        $school = School::factory()->create();
+        $admin = $this->createSchoolAdmin($school, ['reports.definitions.manage']);
+
+        $definition = $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson('/api/v1/report-definitions', $this->payload())
+            ->assertCreated()
+            ->json('data');
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson("/api/v1/report-definitions/{$definition['id']}/restore")
+            ->assertConflict()
+            ->assertJsonPath('error.code', 'conflict');
+    }
+
     private function payload(array $overrides = []): array
     {
         return $overrides + [

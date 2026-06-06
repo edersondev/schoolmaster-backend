@@ -16,7 +16,7 @@ final class ReportRunQueryService
             ->with(['school', 'requester', 'outputs', 'sourceReportRun', 'supersededByReportRun'])
             ->where('school_id', $school->id);
 
-        if ((bool) ($filters['include_deleted'] ?? false)) {
+        if ($this->includeDeleted($filters)) {
             $runs->withTrashed();
         }
 
@@ -37,5 +37,10 @@ final class ReportRunQueryService
         }
 
         return $runs->orderByDesc('created_at')->paginate((int) ($filters['per_page'] ?? 25));
+    }
+
+    private function includeDeleted(array $filters): bool
+    {
+        return filter_var($filters['include_deleted'] ?? false, FILTER_VALIDATE_BOOLEAN);
     }
 }

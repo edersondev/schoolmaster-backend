@@ -59,6 +59,14 @@ final class ReportFilterValidator
     {
         $this->rejectUnknown($query, ['page', 'per_page', 'report_type', 'generation_status', 'report_source', 'include_deleted']);
 
+        if (array_key_exists('include_deleted', $query)) {
+            $query['include_deleted'] = filter_var(
+                $query['include_deleted'],
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE,
+            );
+        }
+
         return Validator::make($query, [
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
