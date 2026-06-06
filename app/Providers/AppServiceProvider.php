@@ -12,6 +12,8 @@ use App\Models\Guardian;
 use App\Models\ImportRun;
 use App\Models\LearningSet;
 use App\Models\Questionnaire;
+use App\Models\ReportDefinition;
+use App\Models\ReportRun;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\StudentProfile;
@@ -27,6 +29,8 @@ use App\Policies\EnrollmentHistoryPolicy;
 use App\Policies\GuardianSelfServicePolicy;
 use App\Policies\LearningSetPolicy;
 use App\Policies\QuestionnairePolicy;
+use App\Policies\ReportDefinitionPolicy;
+use App\Policies\ReportLifecyclePolicy;
 use App\Policies\StudentProfilePolicy;
 use App\Policies\StudentTransferPolicy;
 use App\Policies\TeacherAssignmentPolicy;
@@ -71,6 +75,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(GradeRecord::class, AcademicRecordPolicy::class);
         Gate::policy(AttendanceRecord::class, AcademicRecordPolicy::class);
         Gate::policy(ImportRun::class, AcademicRecordImportPolicy::class);
+        Gate::policy(ReportRun::class, ReportLifecyclePolicy::class);
+        Gate::policy(ReportDefinition::class, ReportDefinitionPolicy::class);
         Gate::define('guardian-self-service.view', [GuardianSelfServicePolicy::class, 'view']);
     }
 }

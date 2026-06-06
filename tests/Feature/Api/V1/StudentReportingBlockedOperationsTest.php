@@ -12,19 +12,21 @@ final class StudentReportingBlockedOperationsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_blocked_student_reporting_routes_are_not_exposed(): void
+    public function test_out_of_scope_report_routes_are_not_exposed(): void
     {
         $school = School::factory()->create();
         $admin = $this->createSchoolAdmin($school, ['reports.view']);
 
         $this->withToken($this->bearerTokenFor($admin))
             ->withHeader('X-School-Id', $school->uuid)
-            ->deleteJson('/api/v1/reports/report-id')
+            ->patchJson('/api/v1/reports/report-id/status', [
+                'status' => 'generated',
+            ])
             ->assertNotFound();
 
         $this->withToken($this->bearerTokenFor($admin))
             ->withHeader('X-School-Id', $school->uuid)
-            ->postJson('/api/v1/reports/report-id/retry')
+            ->postJson('/api/v1/reports/report-id/outputs/pdf/restore')
             ->assertNotFound();
     }
 }

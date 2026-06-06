@@ -12,7 +12,7 @@ final class DownloadReportRequest extends ApiFormRequest
     public function rules(): array
     {
         return [
-            'format' => ['required', 'string', Rule::in(['pdf', 'csv'])],
+            'format' => ['required', 'string', Rule::in(['pdf', 'csv', 'xlsx'])],
         ];
     }
 }

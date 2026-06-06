@@ -41,8 +41,8 @@ SchoolMaster uses MySQL as the primary transactional datastore. The default
 ## API Boundary
 
 Product APIs are RESTful and versioned under `/api/v1`. The approved backend
-foundation and school administration slices are limited to these OpenAPI
-operation IDs:
+foundation, school administration, and report lifecycle slices are limited to
+these OpenAPI operation IDs:
 
 - `login`
 - `getCurrentUser`
@@ -68,6 +68,35 @@ operation IDs:
 - `getGuardianStudent`
 - `getGuardianStudentAcademics`
 - `getGuardianStudentContacts`
+- `listReports`
+- `requestReport`
+- `downloadReport`
+- `retryReport`
+- `cancelReport`
+- `deleteReport`
+- `restoreReport`
+- `getReportCatalog`
+- `listReportDefinitions`
+- `createReportDefinition`
+- `getReportDefinition`
+- `updateReportDefinition`
+- `activateReportDefinition`
+- `deactivateReportDefinition`
+- `deleteReportDefinition`
+- `restoreReportDefinition`
+
+## Report Lifecycle Expansion
+
+The report lifecycle expansion implements school-scoped report run lifecycle
+actions, custom report definitions, catalog-approved custom report requests,
+per-format output availability, and catalog-approved XLSX output support.
+
+Report data remains school-owned through `school_id`. Report runs and custom
+definitions use UUID route identifiers, lifecycle actions are audited through
+tenant-safe reason codes, report-run delete is soft delete only, and output
+download responses never expose storage paths. Custom report definitions are
+unique per school among non-deleted definitions; active definitions allow only
+name and description updates.
 
 Operational framework routes, such as Laravel health checks, are not product
 feature routes. Product Blade views are not part of this backend.

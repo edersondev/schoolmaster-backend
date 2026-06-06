@@ -49,6 +49,7 @@ final class StudentReportingHappyPathTest extends TestCase
             ->postJson('/api/v1/reports', [
                 'report_type' => 'attendance',
                 'filters' => ['academic_period_id' => $period->uuid],
+                'output_formats' => ['pdf', 'csv'],
             ])
             ->assertAccepted();
     }

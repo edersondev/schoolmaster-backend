@@ -18,6 +18,7 @@ final class ReportRunListService
     public function __construct(
         private readonly TenantContextService $tenantContext,
         private readonly ReportFilterValidator $filters,
+        private readonly ReportRunQueryService $query,
     ) {}
 
     public function list(User $actor, TenantContext $context, array $query): LengthAwarePaginator
@@ -26,14 +27,6 @@ final class ReportRunListService
         $school = $this->tenantContext->requireSchool($context);
         $this->assertReportPermission($actor, $school, 'reports.view');
 
-        $runs = ReportRun::query()
-            ->with(['school', 'requester'])
-            ->where('school_id', $school->id);
-
-        if (isset($filters['report_type'])) {
-            $runs->where('report_type', $filters['report_type']);
-        }
-
-        return $runs->orderByDesc('created_at')->paginate((int) ($filters['per_page'] ?? 25));
+        return $this->query->listForSchool($school, $filters);
     }
 }

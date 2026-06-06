@@ -118,6 +118,6 @@ Do not start with implementation when the specs or OpenAPI contract are missing 
 For additional implementation context, read the current plan in the `/specs`
 directory before making substantial changes.
 
-Current administration lifecycle implementation context:
-`specs/specs/007-administration-lifecycle/quickstart.md`.
+Current active feature implementation context:
+`specs/specs/012-report-lifecycle-expansion/quickstart.md`.
 <!-- SPECKIT END -->

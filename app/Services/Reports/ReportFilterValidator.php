@@ -15,7 +15,7 @@ final class ReportFilterValidator
 {
     private const REPORT_TYPES = ['attendance', 'grades', 'academic_structure', 'school_activity'];
 
-    private const FORMATS = ['pdf', 'csv'];
+    private const FORMATS = ['pdf', 'csv', 'xlsx'];
 
     /**
      * @param  array<string, mixed>  $payload
@@ -57,12 +57,23 @@ final class ReportFilterValidator
      */
     public function validateList(array $query): array
     {
-        $this->rejectUnknown($query, ['page', 'per_page', 'report_type']);
+        $this->rejectUnknown($query, ['page', 'per_page', 'report_type', 'generation_status', 'report_source', 'include_deleted']);
+
+        if (array_key_exists('include_deleted', $query)) {
+            $query['include_deleted'] = filter_var(
+                $query['include_deleted'],
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE,
+            );
+        }
 
         return Validator::make($query, [
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'report_type' => ['sometimes', 'string', Rule::in(self::REPORT_TYPES)],
+            'generation_status' => ['sometimes', 'string', Rule::in(['requested', 'generating', 'generated', 'failed', 'canceled'])],
+            'report_source' => ['sometimes', 'string', Rule::in(['built_in', 'custom'])],
+            'include_deleted' => ['sometimes', 'boolean'],
         ])->validate();
     }
 
@@ -75,6 +86,42 @@ final class ReportFilterValidator
         ])->validate();
 
         return $validated['format'];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @param  array<int, string>  $allowedFilterIds
+     * @return array<string, mixed>
+     */
+    public function validateRuntimeFilters(array $filters, int $schoolId, array $allowedFilterIds): array
+    {
+        $this->rejectUnknown($filters, $allowedFilterIds, 'filters.');
+
+        $validated = Validator::make(['filters' => $filters], [
+            'filters' => ['required', 'array'],
+            'filters.academic_period_id' => ['sometimes', 'string', 'uuid'],
+            'filters.student_profile_id' => ['sometimes', 'string', 'uuid'],
+            'filters.user_id' => ['sometimes', 'string', 'uuid'],
+            'filters.status' => ['sometimes', 'string'],
+            'filters.start_date' => ['sometimes', 'date'],
+            'filters.end_date' => ['sometimes', 'date', 'after_or_equal:filters.start_date'],
+        ])->validate();
+
+        $runtimeFilters = $validated['filters'];
+
+        if (isset($runtimeFilters['academic_period_id'])) {
+            $this->assertAcademicPeriod((string) $runtimeFilters['academic_period_id'], $schoolId);
+        }
+
+        if (isset($runtimeFilters['student_profile_id'])) {
+            $this->assertStudent((string) $runtimeFilters['student_profile_id'], $schoolId);
+        }
+
+        if (isset($runtimeFilters['user_id'])) {
+            $this->assertUser((string) $runtimeFilters['user_id'], $schoolId);
+        }
+
+        return $runtimeFilters;
     }
 
     /**

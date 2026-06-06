@@ -25,4 +25,18 @@ final class ReportRunListTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.id', $run->uuid);
     }
+
+    public function test_include_deleted_false_does_not_return_soft_deleted_runs(): void
+    {
+        $school = School::factory()->create();
+        $admin = $this->createSchoolAdmin($school, ['reports.view']);
+        $run = StudentReportingFactory::generatedReportRun($school, $admin);
+        $run->delete();
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/reports?include_deleted=false')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
 }
