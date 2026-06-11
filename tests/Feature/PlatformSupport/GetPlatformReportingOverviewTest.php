@@ -97,4 +97,34 @@ final class GetPlatformReportingOverviewTest extends TestCase
             ->assertJsonPath('data.reporting_health.failed.value', 5)
             ->assertJsonPath('data.reporting_health.generated.value', 0);
     }
+
+    public function test_reporting_overview_counts_canceled_report_runs(): void
+    {
+        $school = School::factory()->create();
+        $requester = $this->createSchoolAdmin($school, ['reports.request']);
+
+        for ($i = 0; $i < 5; $i++) {
+            ReportRun::query()->create([
+                'school_id' => $school->id,
+                'requested_by_user_id' => $requester->id,
+                'report_type' => 'attendance',
+                'filter_summary' => [],
+                'output_formats' => ['pdf'],
+                'status' => 'canceled',
+                'generation_status' => 'canceled',
+                'outputs_available' => false,
+                'cancellation_reason_code' => 'no_longer_needed',
+            ]);
+        }
+
+        $actor = $this->createPlatformUser(['platform_support.reporting']);
+
+        $this->withToken($this->bearerTokenFor($actor))
+            ->getJson('/api/v1/platform/reporting/overview')
+            ->assertOk()
+            ->assertJsonPath('data.reporting_health.canceled.value', 5)
+            ->assertJsonPath('data.lifecycle_states.canceled.value', 5)
+            ->assertJsonMissingPath('data.reporting_health.cancelled')
+            ->assertJsonMissingPath('data.lifecycle_states.cancelled');
+    }
 }

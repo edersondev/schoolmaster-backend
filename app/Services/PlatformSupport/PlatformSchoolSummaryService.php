@@ -103,7 +103,7 @@ final readonly class PlatformSchoolSummaryService
             'requested' => $this->redaction->protectedCount((int) ($counts['requested'] ?? 0)),
             'generated' => $this->redaction->protectedCount((int) ($counts['generated'] ?? 0)),
             'failed' => $this->redaction->protectedCount((int) ($counts['failed'] ?? 0)),
-            'cancelled' => $this->redaction->protectedCount((int) ($counts['cancelled'] ?? 0)),
+            'canceled' => $this->redaction->protectedCount((int) ($counts['canceled'] ?? 0)),
         ];
     }
 

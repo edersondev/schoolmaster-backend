@@ -47,8 +47,8 @@ final readonly class PlatformReportingOverviewService
         }
 
         $data = [
-            'reporting_health' => $this->groupedCounts(clone $baseQuery, 'generation_status', ['requested', 'generated', 'failed', 'cancelled']),
-            'lifecycle_states' => $this->groupedCounts(clone $baseQuery, 'status', ['requested', 'generated', 'failed', 'cancelled', 'deleted']),
+            'reporting_health' => $this->groupedCounts(clone $baseQuery, 'generation_status', ['requested', 'generated', 'failed', 'canceled']),
+            'lifecycle_states' => $this->groupedCounts(clone $baseQuery, 'status', ['requested', 'generated', 'failed', 'canceled', 'deleted']),
             'output_availability' => [
                 'available' => $this->redaction->protectedCount((clone $baseQuery)->where('outputs_available', true)->count()),
                 'unavailable' => $this->redaction->protectedCount((clone $baseQuery)->where('outputs_available', false)->count()),
@@ -57,7 +57,7 @@ final readonly class PlatformReportingOverviewService
                 'expired_outputs' => $this->redaction->protectedCount((clone $baseQuery)->whereNotNull('output_expires_at')->where('output_expires_at', '<', now())->count()),
                 'active_outputs' => $this->redaction->protectedCount((clone $baseQuery)->whereNotNull('output_expires_at')->where('output_expires_at', '>=', now())->count()),
             ],
-            'failure_summary' => $this->groupedCounts(clone $baseQuery, 'failure_reason_code', ['source_unavailable', 'generation_failed', 'cancelled']),
+            'failure_summary' => $this->groupedCounts(clone $baseQuery, 'failure_reason_code', ['source_unavailable', 'generation_failed', 'canceled']),
         ];
 
         $this->audit->record(
