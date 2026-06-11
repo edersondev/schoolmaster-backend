@@ -36,8 +36,9 @@ final readonly class PlatformSchoolSummaryService
             $query->where('status', $filters['status']);
         }
 
-        [$sortField, $sortDirection] = $this->resolveSort($filters['sort'] ?? 'name');
-        $query->orderBy($sortField, $sortDirection);
+        foreach ($this->resolveSorts($filters['sort'] ?? 'name') as [$sortField, $sortDirection]) {
+            $query->orderBy($sortField, $sortDirection);
+        }
 
         $paginator = $query->paginate((int) ($filters['per_page'] ?? 15));
         $paginator->getCollection()->transform(fn (School $school): array => $this->summaryFor($school));
@@ -107,14 +108,22 @@ final readonly class PlatformSchoolSummaryService
     }
 
     /**
-     * @return array{0: string, 1: string}
+     * @return array<int, array{0: string, 1: string}>
      */
-    private function resolveSort(mixed $sort): array
+    private function resolveSorts(mixed $sort): array
     {
         $sort = is_string($sort) && $sort !== '' ? $sort : 'name';
-        $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
-        $field = ltrim($sort, '-');
+        $resolved = [];
 
-        return [in_array($field, ['name', 'status', 'created_at'], true) ? $field : 'name', $direction];
+        foreach (explode(',', $sort) as $fieldSort) {
+            $direction = str_starts_with($fieldSort, '-') ? 'desc' : 'asc';
+            $field = ltrim($fieldSort, '-');
+
+            if (in_array($field, ['name', 'status', 'created_at'], true)) {
+                $resolved[] = [$field, $direction];
+            }
+        }
+
+        return $resolved === [] ? [['name', 'asc']] : $resolved;
     }
 }

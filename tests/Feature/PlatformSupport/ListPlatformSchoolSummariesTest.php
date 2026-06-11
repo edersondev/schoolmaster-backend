@@ -50,4 +50,14 @@ final class ListPlatformSchoolSummariesTest extends TestCase
             ->where('outcome', 'allowed')
             ->count());
     }
+
+    public function test_platform_school_summary_rejects_unsupported_sort_fields(): void
+    {
+        $actor = $this->createPlatformUser(['platform_support.overview']);
+
+        $this->withToken($this->bearerTokenFor($actor))
+            ->getJson('/api/v1/platform/schools?sort=email')
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+    }
 }

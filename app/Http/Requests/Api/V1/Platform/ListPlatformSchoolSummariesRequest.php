@@ -15,7 +15,7 @@ final class ListPlatformSchoolSummariesRequest extends PlatformSupportFormReques
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'status' => ['sometimes', 'string', 'in:active,inactive,suspended'],
-            'sort' => ['sometimes', 'string', 'max:120'],
+            'sort' => ['sometimes', 'string', 'max:120', 'regex:/^-?(name|status|created_at)(,-?(name|status|created_at))*$/'],
         ];
     }
 }
