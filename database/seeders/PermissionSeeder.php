@@ -63,6 +63,12 @@ final class PermissionSeeder extends Seeder
             ['code' => 'reports.request', 'name' => 'Request school reports', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'reports.lifecycle', 'name' => 'Manage school report lifecycle', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'reports.definitions.manage', 'name' => 'Manage school report definitions', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'platform_support.overview', 'name' => 'View platform school operational summaries', 'scope' => 'platform', 'status' => 'active'],
+            ['code' => 'platform_support.reporting', 'name' => 'View platform reporting overview', 'scope' => 'platform', 'status' => 'active'],
+            ['code' => 'platform_support.drill_down', 'name' => 'Request and view support drill-down diagnostics', 'scope' => 'platform', 'status' => 'active'],
+            ['code' => 'platform_support.approve', 'name' => 'Approve and revoke platform support access', 'scope' => 'platform', 'status' => 'active'],
+            ['code' => 'platform_support.audit', 'name' => 'Review platform support audit events', 'scope' => 'platform', 'status' => 'active'],
+            ['code' => 'platform_support.opt_in', 'name' => 'Approve school support opt-in', 'scope' => 'school', 'status' => 'active'],
         ];
     }
 }

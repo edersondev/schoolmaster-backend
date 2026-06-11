@@ -47,4 +47,24 @@ final class School extends Model
     {
         return $this->hasMany(Guardian::class);
     }
+
+    public function supportAccessDecisions(): HasMany
+    {
+        return $this->hasMany(SupportAccessDecision::class);
+    }
+
+    public function targetSchoolSupportOptIns(): HasMany
+    {
+        return $this->hasMany(TargetSchoolSupportOptIn::class);
+    }
+
+    public function internalPlatformApprovals(): HasMany
+    {
+        return $this->hasMany(InternalPlatformApproval::class);
+    }
+
+    public function platformSupportAuditEvents(): HasMany
+    {
+        return $this->hasMany(PlatformSupportAuditEvent::class);
+    }
 }

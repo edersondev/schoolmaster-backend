@@ -68,6 +68,36 @@ class User extends Authenticatable
         return $this->hasMany(GuardianUserLink::class);
     }
 
+    public function supportAccessDecisions(): HasMany
+    {
+        return $this->hasMany(SupportAccessDecision::class, 'actor_user_id');
+    }
+
+    public function requestedSupportOptIns(): HasMany
+    {
+        return $this->hasMany(TargetSchoolSupportOptIn::class, 'requested_by_user_id');
+    }
+
+    public function approvedSupportOptIns(): HasMany
+    {
+        return $this->hasMany(TargetSchoolSupportOptIn::class, 'approved_by_user_id');
+    }
+
+    public function internalPlatformApprovals(): HasMany
+    {
+        return $this->hasMany(InternalPlatformApproval::class, 'approver_user_id');
+    }
+
+    public function supportActorInternalPlatformApprovals(): HasMany
+    {
+        return $this->hasMany(InternalPlatformApproval::class, 'support_actor_user_id');
+    }
+
+    public function platformSupportAuditEvents(): HasMany
+    {
+        return $this->hasMany(PlatformSupportAuditEvent::class, 'actor_user_id');
+    }
+
     public function permissions()
     {
         return Permission::query()

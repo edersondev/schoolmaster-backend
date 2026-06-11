@@ -84,6 +84,16 @@ these OpenAPI operation IDs:
 - `deactivateReportDefinition`
 - `deleteReportDefinition`
 - `restoreReportDefinition`
+- `listPlatformSchoolSummaries`
+- `getPlatformReportingOverview`
+- `requestSupportAccess`
+- `getSupportAccessDecision`
+- `approveSupportAccess`
+- `revokeSupportAccess`
+- `createSchoolSupportOptIn`
+- `revokeSchoolSupportOptIn`
+- `getSupportSchoolDiagnostics`
+- `listSupportAuditEvents`
 
 ## Report Lifecycle Expansion
 
@@ -101,13 +111,26 @@ name and description updates.
 Operational framework routes, such as Laravel health checks, are not product
 feature routes. Product Blade views are not part of this backend.
 
+## Platform Support Access
+
+The platform support access slice adds explicit platform-scoped visibility for
+minimized school operational summaries, cross-school reporting overview,
+read-only support diagnostics, target-school support opt-ins, internal platform
+approvals, and minimized support audit review.
+
+Support diagnostics require both a same-school support opt-in and an internal
+platform approval, each within the 24-hour window. Platform support routes do
+not expose generated report downloads, raw report outputs, private file paths,
+emergency access, impersonation, unrestricted search, or support writes.
+Protected aggregate counts below 5 are suppressed, and platform support audit
+metadata is redacted before storage.
+
 ## Contract Validation
 
 Run OpenAPI validation before merging product-visible behavior:
 
 ```bash
-npx @redocly/cli lint specs/api/openapi.yaml
-npx @redocly/cli lint specs/specs/001-schoolmaster-platform/contracts/openapi.yaml
+npx @redocly/cli lint --config specs/redocly.yaml aggregate@v1 schoolmaster-platform@v1
 ```
 
 ## Backend Validation

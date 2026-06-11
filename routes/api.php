@@ -12,14 +12,15 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BulkAdministrationLifecycleController;
 use App\Http\Controllers\Api\V1\ClassSectionController;
 use App\Http\Controllers\Api\V1\GradeController;
-use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\Guardian\GuardianSelfServiceController;
+use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearningSetController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PermissionController;
+use App\Http\Controllers\Api\V1\Platform\PlatformSupportController;
 use App\Http\Controllers\Api\V1\QuestionnaireController;
-use App\Http\Controllers\Api\V1\ReportDefinitionController;
 use App\Http\Controllers\Api\V1\ReportController;
+use App\Http\Controllers\Api\V1\ReportDefinitionController;
 use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\RosterMembershipController;
 use App\Http\Controllers\Api\V1\SchoolController;
@@ -29,9 +30,9 @@ use App\Http\Controllers\Api\V1\StudentGradeController;
 use App\Http\Controllers\Api\V1\StudentLearningSetController;
 use App\Http\Controllers\Api\V1\StudentProfileController;
 use App\Http\Controllers\Api\V1\StudentTeacherContentController;
+use App\Http\Controllers\Api\V1\TeacherAssignmentController;
 use App\Http\Controllers\Api\V1\TeacherContentController;
 use App\Http\Controllers\Api\V1\TeacherMaterialsController;
-use App\Http\Controllers\Api\V1\TeacherAssignmentController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,6 +63,19 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/schools/{schoolId}/deactivate', [SchoolLifecycleController::class, 'deactivate'])->whereUuid('schoolId')->name('api.v1.schools.deactivate');
         Route::delete('/schools/{schoolId}', [SchoolLifecycleController::class, 'delete'])->whereUuid('schoolId')->name('api.v1.schools.delete');
         Route::post('/schools/{schoolId}/restore', [SchoolLifecycleController::class, 'restore'])->whereUuid('schoolId')->name('api.v1.schools.restore');
+        Route::post('/schools/{schoolId}/support-opt-ins', [PlatformSupportController::class, 'createSchoolSupportOptIn'])->whereUuid('schoolId')->name('api.v1.schools.support-opt-ins.store');
+        Route::post('/schools/{schoolId}/support-opt-ins/{supportOptInId}/revoke', [PlatformSupportController::class, 'revokeSchoolSupportOptIn'])->whereUuid('schoolId')->whereUuid('supportOptInId')->name('api.v1.schools.support-opt-ins.revoke');
+
+        Route::prefix('platform')->name('api.v1.platform.')->group(function (): void {
+            Route::get('/schools', [PlatformSupportController::class, 'schools'])->name('schools.index');
+            Route::get('/reporting/overview', [PlatformSupportController::class, 'reportingOverview'])->name('reporting.overview');
+            Route::post('/support-access', [PlatformSupportController::class, 'requestSupportAccess'])->name('support-access.store');
+            Route::get('/support-access/{supportAccessId}', [PlatformSupportController::class, 'showSupportAccess'])->whereUuid('supportAccessId')->name('support-access.show');
+            Route::post('/support-access/{supportAccessId}/approve', [PlatformSupportController::class, 'approveSupportAccess'])->whereUuid('supportAccessId')->name('support-access.approve');
+            Route::post('/support-access/{supportAccessId}/revoke', [PlatformSupportController::class, 'revokeSupportAccess'])->whereUuid('supportAccessId')->name('support-access.revoke');
+            Route::get('/support/schools/{schoolId}/diagnostics', [PlatformSupportController::class, 'diagnostics'])->whereUuid('schoolId')->name('support.schools.diagnostics');
+            Route::get('/support-audit-events', [PlatformSupportController::class, 'auditEvents'])->name('support-audit-events.index');
+        });
 
         Route::middleware('schoolmaster.school_context')->group(function (): void {
             Route::prefix('teacher-workflow')->group(function (): void {
