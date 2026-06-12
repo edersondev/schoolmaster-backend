@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearningSetController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PermissionController;
+use App\Http\Controllers\Api\V1\Assessment\AssessmentController;
 use App\Http\Controllers\Api\V1\Platform\PlatformSupportController;
 use App\Http\Controllers\Api\V1\QuestionnaireController;
 use App\Http\Controllers\Api\V1\ReportController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Api\V1\RosterMembershipController;
 use App\Http\Controllers\Api\V1\SchoolController;
 use App\Http\Controllers\Api\V1\SchoolLifecycleController;
 use App\Http\Controllers\Api\V1\StudentAttendanceController;
+use App\Http\Controllers\Api\V1\Student\StudentAssessmentController;
 use App\Http\Controllers\Api\V1\StudentGradeController;
 use App\Http\Controllers\Api\V1\StudentLearningSetController;
 use App\Http\Controllers\Api\V1\StudentProfileController;
@@ -169,6 +171,11 @@ Route::prefix('v1')->group(function (): void {
             Route::delete('/learning-sets/{learningSetId}', [LearningSetController::class, 'delete'])->whereUuid('learningSetId')->name('api.v1.learning-sets.delete');
             Route::post('/learning-sets/{learningSetId}/restore', [LearningSetController::class, 'restore'])->whereUuid('learningSetId')->name('api.v1.learning-sets.restore');
 
+            Route::get('/questionnaire-responses', [AssessmentController::class, 'index'])->name('api.v1.questionnaire-responses.index');
+            Route::get('/questionnaire-responses/{responseAttemptId}', [AssessmentController::class, 'show'])->whereUuid('responseAttemptId')->name('api.v1.questionnaire-responses.show');
+            Route::post('/questionnaire-responses/{responseAttemptId}/grading', [AssessmentController::class, 'grade'])->whereUuid('responseAttemptId')->name('api.v1.questionnaire-responses.grading.store');
+            Route::get('/questionnaire-responses/{responseAttemptId}/files/{fileId}/download', [AssessmentController::class, 'download'])->whereUuid('responseAttemptId')->whereUuid('fileId')->name('api.v1.questionnaire-responses.files.download');
+
             Route::prefix('class-sections')->name('api.v1.class-sections.')->group(function (): void {
                 Route::get('/', [ClassSectionController::class, 'index'])->name('index');
                 Route::post('/', [ClassSectionController::class, 'store'])->name('store');
@@ -207,6 +214,8 @@ Route::prefix('v1')->group(function (): void {
 
             Route::prefix('student')->name('api.v1.student.')->group(function (): void {
                 Route::get('/learning-sets', [StudentLearningSetController::class, 'index'])->name('learning-sets.index');
+                Route::post('/questionnaire-responses', [StudentAssessmentController::class, 'store'])->name('questionnaire-responses.store');
+                Route::get('/questionnaire-responses/{responseAttemptId}', [StudentAssessmentController::class, 'show'])->whereUuid('responseAttemptId')->name('questionnaire-responses.show');
                 Route::get('/grades', [StudentGradeController::class, 'index'])->name('grades.index');
                 Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance.index');
                 Route::get('/teacher-content/{contentItemId}/download', [StudentTeacherContentController::class, 'download'])->name('teacher-content.download');

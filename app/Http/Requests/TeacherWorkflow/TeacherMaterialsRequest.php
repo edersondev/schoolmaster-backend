@@ -6,6 +6,7 @@ namespace App\Http\Requests\TeacherWorkflow;
 
 use App\Http\Requests\ApiFormRequest;
 use App\Http\Requests\TeacherWorkflow\Concerns\ValidatesTeacherWorkflowRequests;
+use App\Services\Assessment\AssessmentQuestionSchemaService;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -27,11 +28,14 @@ final class TeacherMaterialsRequest extends ApiFormRequest
                     'title' => ['sometimes', 'string', 'max:255'],
                     'description' => ['sometimes', 'nullable', 'string', 'max:5000'],
                     'questions' => ['sometimes', 'array', 'min:1'],
-                    'questions.*.question_type' => ['required_with:questions', 'string', Rule::in(['multiple_choice', 'true_false', 'short_text'])],
+                    'questions.*.question_type' => ['required_with:questions', 'string', Rule::in(AssessmentQuestionSchemaService::QUESTION_TYPES)],
                     'questions.*.prompt' => ['required_with:questions', 'string', 'max:2000'],
                     'questions.*.options' => ['sometimes', 'array', 'min:2'],
                     'questions.*.options.*' => ['string', 'max:500'],
                     'questions.*.correct_answer' => ['sometimes', 'nullable', 'string', 'max:1000'],
+                    'questions.*.answer_schema' => ['sometimes', 'nullable', 'array'],
+                    'questions.*.grading_rule' => ['sometimes', 'nullable', 'array'],
+                    'questions.*.visibility' => ['sometimes', 'nullable', 'array'],
                     'questions.*.sequence' => ['required_with:questions', 'integer', 'min:1'],
                 ];
             }
@@ -71,7 +75,7 @@ final class TeacherMaterialsRequest extends ApiFormRequest
                     continue;
                 }
 
-                $extra = array_diff(array_keys($question), ['question_type', 'prompt', 'options', 'correct_answer', 'sequence']);
+                $extra = array_diff(array_keys($question), ['question_type', 'prompt', 'options', 'correct_answer', 'answer_schema', 'grading_rule', 'visibility', 'sequence']);
                 if ($extra !== []) {
                     $validator->errors()->add("questions.$index", 'Question contains undocumented fields.');
                 }

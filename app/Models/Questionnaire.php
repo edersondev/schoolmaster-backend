@@ -65,6 +65,11 @@ final class Questionnaire extends Model
             ->where('entry_type', 'questionnaire');
     }
 
+    public function assessmentResponseAttempts(): HasMany
+    {
+        return $this->hasMany(AssessmentResponseAttempt::class);
+    }
+
     public function auditEvents(): HasMany
     {
         return $this->hasMany(AuditEvent::class, 'affected_resource_id', 'uuid')

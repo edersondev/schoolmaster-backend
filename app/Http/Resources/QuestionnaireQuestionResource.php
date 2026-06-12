@@ -17,6 +17,9 @@ final class QuestionnaireQuestionResource extends JsonResource
             'prompt' => $this->prompt,
             'options' => $this->options,
             'correct_answer' => $this->correct_answer,
+            'answer_schema' => $this->answer_schema,
+            'grading_rule' => $this->grading_rule,
+            'visibility' => $this->visibility,
             'sequence' => $this->sequence,
         ];
     }

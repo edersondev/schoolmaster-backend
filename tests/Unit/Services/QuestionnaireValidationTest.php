@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
+use App\Services\Assessment\AssessmentQuestionSchemaService;
 use App\Services\Questionnaires\QuestionnaireValidator;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -14,7 +15,7 @@ final class QuestionnaireValidationTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
-        (new QuestionnaireValidator)->validate([
+        (new QuestionnaireValidator(new AssessmentQuestionSchemaService))->validate([
             ['question_type' => 'multiple_choice', 'prompt' => 'Pick', 'options' => ['A'], 'sequence' => 1],
         ]);
     }

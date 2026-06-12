@@ -11,6 +11,10 @@ storage/framework/cache/
 storage/framework/sessions/
 storage/framework/views/
 *.log
+*.log*
 .env
 .env.*
 !.env.example
+Dockerfile*
+.dockerignore
+coverage/
