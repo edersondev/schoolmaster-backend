@@ -94,6 +94,15 @@ these OpenAPI operation IDs:
 - `revokeSchoolSupportOptIn`
 - `getSupportSchoolDiagnostics`
 - `listSupportAuditEvents`
+- `createQuestionnaire`
+- `getQuestionnaire`
+- `updateQuestionnaire`
+- `submitStudentQuestionnaireResponse`
+- `getStudentQuestionnaireResponse`
+- `listQuestionnaireResponses`
+- `getQuestionnaireResponse`
+- `gradeQuestionnaireResponse`
+- `downloadQuestionnaireResponseFile`
 
 ## Report Lifecycle Expansion
 
@@ -124,6 +133,28 @@ not expose generated report downloads, raw report outputs, private file paths,
 emergency access, impersonation, unrestricted search, or support writes.
 Protected aggregate counts below 5 are suppressed, and platform support audit
 metadata is redacted before storage.
+
+## Advanced Assessment Content Types
+
+The advanced assessment slice extends questionnaires with `long_text` and
+`file_response` questions while preserving existing v1 question behavior and
+historical-meaning locks. Students may submit one assigned same-school response
+attempt under `/api/v1/student/questionnaire-responses`; submissions are
+tenant-scoped, due-date gated, and stored atomically.
+
+Answer files are stored privately, limited to one safe PDF, image, text, or
+office file per file-response question, capped at 25 MB, and scan-gated before
+review download. Teachers and school administrators can review same-school
+responses, download only clean answer files, and record manual 0-100 grading.
+Failed scan file answers may only receive zero or exempt outcomes.
+
+Student views expose only own response status, grading status, score summary,
+teacher feedback summary, and safe file availability metadata. Reports expose
+only advanced assessment aggregate fields: response count, completion status,
+grading status, and score summary. Raw answers, uploaded files, file links,
+private metadata, storage paths, answer keys, and private grading notes remain
+excluded from reports, guardian views, platform support views, and audit
+metadata.
 
 ## Contract Validation
 

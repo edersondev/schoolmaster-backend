@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'questionnaire_id', 'question_type', 'prompt', 'options', 'correct_answer', 'sequence'])]
+#[Fillable(['uuid', 'questionnaire_id', 'question_type', 'prompt', 'options', 'correct_answer', 'answer_schema', 'grading_rule', 'visibility', 'sequence'])]
 final class QuestionnaireQuestion extends Model
 {
     use HasFactory;
@@ -26,6 +26,9 @@ final class QuestionnaireQuestion extends Model
     {
         return [
             'options' => 'array',
+            'answer_schema' => 'array',
+            'grading_rule' => 'array',
+            'visibility' => 'array',
             'sequence' => 'integer',
         ];
     }

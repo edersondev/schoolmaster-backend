@@ -75,6 +75,11 @@ final class LearningSet extends Model
         return $this->hasMany(LearningSetAssignment::class);
     }
 
+    public function assessmentResponseAttempts(): HasMany
+    {
+        return $this->hasMany(AssessmentResponseAttempt::class);
+    }
+
     public function auditEvents(): HasMany
     {
         return $this->hasMany(AuditEvent::class, 'affected_resource_id', 'uuid')

@@ -16,6 +16,7 @@ final class ReportOutputService
         'grades' => ['pdf', 'csv', 'xlsx'],
         'academic_structure' => ['pdf', 'csv'],
         'school_activity' => ['pdf', 'csv'],
+        'advanced_assessments' => ['pdf', 'csv'],
     ];
 
     public function assertFormatsSupported(string $reportType, array $formats, ?array $definitionFormats = null): void
