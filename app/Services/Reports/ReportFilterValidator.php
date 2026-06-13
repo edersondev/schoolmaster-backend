@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 final class ReportFilterValidator
 {
-    private const REPORT_TYPES = ['attendance', 'grades', 'academic_structure', 'school_activity'];
+    private const REPORT_TYPES = ['attendance', 'grades', 'academic_structure', 'school_activity', 'advanced_assessments'];
 
     private const FORMATS = ['pdf', 'csv', 'xlsx'];
 

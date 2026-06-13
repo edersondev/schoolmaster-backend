@@ -51,6 +51,27 @@ final class AssessmentManualGradingTest extends TestCase
         ])->assertUnprocessable();
     }
 
+    public function test_regrading_uses_latest_score_for_attempt_summary(): void
+    {
+        [$school, $teacher, $attempt, $answer] = $this->context();
+
+        $this->withHeaders($this->headers($teacher, $school))->postJson("/api/v1/questionnaire-responses/{$attempt->uuid}/grading", [
+            'grading_outcomes' => [['answer_id' => $answer->uuid, 'status' => 'graded', 'score' => 60]],
+        ])->assertOk()
+            ->assertJsonPath('data.score_summary.earned_points', 60);
+
+        $this->withHeaders($this->headers($teacher, $school))->postJson("/api/v1/questionnaire-responses/{$attempt->uuid}/grading", [
+            'grading_outcomes' => [['answer_id' => $answer->uuid, 'status' => 'graded', 'score' => 80]],
+        ])->assertOk()
+            ->assertJsonPath('data.score_summary.earned_points', 80)
+            ->assertJsonPath('data.score_summary.percentage', 80);
+
+        $attempt->refresh();
+
+        $this->assertDatabaseCount('assessment_grading_outcomes', 2);
+        $this->assertSame('80.00', $attempt->earned_points);
+    }
+
     private function context(): array
     {
         $school = School::factory()->create();

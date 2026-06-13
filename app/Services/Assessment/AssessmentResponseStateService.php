@@ -10,11 +10,15 @@ final class AssessmentResponseStateService
 {
     public function refreshFromAnswers(AssessmentResponseAttempt $attempt): AssessmentResponseAttempt
     {
-        $attempt->loadMissing('answers.fileAttachment', 'gradingOutcomes');
+        $attempt->load('answers.fileAttachment', 'gradingOutcomes');
 
         $hasPendingFile = $attempt->answers->contains(fn ($answer): bool => $answer->fileAttachment?->scan_status === 'pending');
         $hasFailedFile = $attempt->answers->contains(fn ($answer): bool => $answer->fileAttachment?->scan_status === 'failed');
-        $gradedCount = $attempt->gradingOutcomes->whereIn('grading_status', ['graded', 'exempted'])->count();
+        $latestOutcomes = $attempt->gradingOutcomes
+            ->whereNotNull('assessment_answer_id')
+            ->sortByDesc('id')
+            ->unique('assessment_answer_id');
+        $gradedCount = $latestOutcomes->whereIn('grading_status', ['graded', 'exempted'])->count();
         $answerCount = $attempt->answers->count();
 
         $state = match (true) {

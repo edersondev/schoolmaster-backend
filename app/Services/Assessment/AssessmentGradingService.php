@@ -82,10 +82,13 @@ final class AssessmentGradingService
                 ])->save();
             }
 
-            $attempt->unsetRelation('gradingOutcomes');
             $graded = $this->state->refreshFromAnswers($attempt);
+            $latestOutcomes = $graded->gradingOutcomes
+                ->whereNotNull('assessment_answer_id')
+                ->sortByDesc('id')
+                ->unique('assessment_answer_id');
             $graded->forceFill([
-                'earned_points' => $graded->gradingOutcomes()->whereNotNull('score')->sum('score'),
+                'earned_points' => $latestOutcomes->whereNotNull('score')->sum(fn (AssessmentGradingOutcome $outcome): float => (float) $outcome->score),
                 'possible_points' => max(1, $graded->answers()->count()) * 100,
             ])->save();
             $this->audit->record($context, 'grading', 'succeeded', 'manual_grading_recorded', $graded, [
