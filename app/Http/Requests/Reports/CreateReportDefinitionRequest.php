@@ -14,7 +14,7 @@ class CreateReportDefinitionRequest extends ApiFormRequest
         return [
             'name' => ['required', 'string', 'max:120'],
             'description' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'domain' => ['required', 'string', Rule::in(['attendance', 'grades', 'academic_structure', 'school_activity'])],
+            'domain' => ['required', 'string', Rule::in(['attendance', 'grades', 'academic_structure', 'school_activity', 'advanced_assessments'])],
             'fields' => ['required', 'array', 'min:1', 'max:25'],
             'fields.*' => ['required', 'string'],
             'filters' => ['sometimes', 'array', 'max:10'],

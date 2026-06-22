@@ -9,10 +9,11 @@ final readonly class CreateQuestionnaireData
     public function __construct(
         public string $title,
         public array $questions,
+        public ?string $description = null,
     ) {}
 
     public static function fromArray(array $data): self
     {
-        return new self($data['title'], $data['questions']);
+        return new self($data['title'], $data['questions'], $data['description'] ?? null);
     }
 }

@@ -85,6 +85,11 @@ final class StudentProfile extends Model
         return $this->hasMany(AttendanceRecord::class);
     }
 
+    public function assessmentResponseAttempts(): HasMany
+    {
+        return $this->hasMany(AssessmentResponseAttempt::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';

@@ -12,7 +12,7 @@ final class RequestReportRequest extends ApiFormRequest
     public function rules(): array
     {
         return [
-            'report_type' => ['required_without:report_definition_id', 'string', Rule::in(['attendance', 'grades', 'academic_structure', 'school_activity'])],
+            'report_type' => ['required_without:report_definition_id', 'string', Rule::in(['attendance', 'grades', 'academic_structure', 'school_activity', 'advanced_assessments'])],
             'report_definition_id' => ['required_without:report_type', 'string', 'uuid'],
             'filters' => ['required', 'array'],
             'filters.academic_period_id' => ['sometimes', 'string', 'uuid'],

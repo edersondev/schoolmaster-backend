@@ -10,6 +10,7 @@ use App\Exceptions\TokenRejectedException;
 use App\Http\Middleware\AuthenticateBearerToken;
 use App\Http\Middleware\ResolveSchoolContext;
 use App\Http\Resources\ApiResponse;
+use App\Services\Assessment\AssessmentAuditService;
 use App\Services\ClassroomRoster\ClassroomRosterFailureAudit;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -20,6 +21,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -36,7 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (ValidationException $exception) {
+        $exceptions->render(function (ValidationException $exception, \Illuminate\Http\Request $request) {
+            app(AssessmentAuditService::class)->recordRequestFailure($request, 'validation', 'rejected', 'validation_failed');
+
             return ApiResponse::validation($exception->errors());
         });
 
@@ -48,6 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
                 'failure_type' => 'authorization',
             ]);
+            app(AssessmentAuditService::class)->recordRequestFailure($request, 'denial', 'denied', 'authorization_denied');
 
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
         });
@@ -56,6 +61,7 @@ return Application::configure(basePath: dirname(__DIR__))
             app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
                 'failure_type' => 'access_denied',
             ]);
+            app(AssessmentAuditService::class)->recordRequestFailure($request, 'denial', 'denied', 'access_denied');
 
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
         });
@@ -64,6 +70,7 @@ return Application::configure(basePath: dirname(__DIR__))
             app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
                 'failure_type' => 'permission_denied',
             ]);
+            app(AssessmentAuditService::class)->recordRequestFailure($request, 'denial', 'denied', 'permission_denied');
 
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
         });
@@ -76,6 +83,7 @@ return Application::configure(basePath: dirname(__DIR__))
             app(ClassroomRosterFailureAudit::class)->record($request, 'conflict', [
                 'failure_type' => 'conflict',
             ]);
+            app(AssessmentAuditService::class)->recordRequestFailure($request, 'conflict', 'conflicted', 'lifecycle_conflict');
 
             return ApiResponse::error('conflict', $exception->getMessage(), [], 409);
         });
@@ -84,6 +92,7 @@ return Application::configure(basePath: dirname(__DIR__))
             app(ClassroomRosterFailureAudit::class)->record($request, 'tenant_mismatch', [
                 'failure_type' => 'tenant_context',
             ]);
+            app(AssessmentAuditService::class)->recordRequestFailure($request, 'denial', 'denied', 'tenant_context');
 
             return ApiResponse::tenantMismatch($exception->getMessage());
         });
@@ -102,6 +111,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (ThrottleRequestsException $exception) {
             return ApiResponse::lockout((int) ($exception->getHeaders()['Retry-After'] ?? 900));
+        });
+
+        $exceptions->render(function (HttpException $exception) {
+            if ($exception->getStatusCode() === 423) {
+                return ApiResponse::error('scan_pending', $exception->getMessage(), [], 423);
+            }
+
+            if ($exception->getStatusCode() === 424) {
+                return ApiResponse::error('scan_failed', $exception->getMessage(), [], 424);
+            }
+
+            return null;
         });
 
         $exceptions->render(function (ModelNotFoundException|NotFoundHttpException $exception) {

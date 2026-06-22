@@ -9,6 +9,7 @@ use App\DTOs\TenantContext;
 use App\Models\Questionnaire;
 use App\Models\User;
 use App\Repositories\TeacherWorkflow\TeacherWorkflowLookupRepository;
+use App\Services\Questionnaires\QuestionnaireValidator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -21,6 +22,7 @@ final class QuestionnaireService
         private readonly HistoricalMeaningGuard $historicalMeaning,
         private readonly LifecycleTransitionService $lifecycle,
         private readonly TeacherWorkflowAuditLogger $audit,
+        private readonly QuestionnaireValidator $validator,
     ) {}
 
     public function get(User $actor, TenantContext $context, string $questionnaireUuid): Questionnaire
@@ -39,6 +41,9 @@ final class QuestionnaireService
         $questionnaire = $this->resolve($context, $questionnaireUuid);
         Gate::forUser($actor)->authorize('update', $questionnaire);
         $this->historicalMeaning->assertQuestionnaireEditable($questionnaire, $changes);
+        if (isset($changes['questions']) && is_array($changes['questions'])) {
+            $this->validator->validate($changes['questions']);
+        }
 
         return DB::transaction(function () use ($actor, $changes, $questionnaire): Questionnaire {
             $questionChanges = $changes['questions'] ?? null;
@@ -57,6 +62,9 @@ final class QuestionnaireService
                         'prompt' => $question['prompt'],
                         'options' => $question['options'] ?? null,
                         'correct_answer' => $question['correct_answer'] ?? null,
+                        'answer_schema' => $question['answer_schema'] ?? null,
+                        'grading_rule' => $question['grading_rule'] ?? null,
+                        'visibility' => $question['visibility'] ?? null,
                         'sequence' => $question['sequence'],
                     ]);
                 }
@@ -119,7 +127,7 @@ final class QuestionnaireService
         $questionnaire = $this->lookup->findQuestionnaire($uuid, $school->id);
 
         if ($questionnaire === null) {
-            throw (new ModelNotFoundException())->setModel(Questionnaire::class, [$uuid]);
+            throw (new ModelNotFoundException)->setModel(Questionnaire::class, [$uuid]);
         }
 
         return $questionnaire;

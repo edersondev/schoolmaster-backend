@@ -45,7 +45,8 @@ final class HistoricalMeaningGuard
 
     public function questionnaireIsUsed(Questionnaire $questionnaire): bool
     {
-        return $questionnaire->learningSetEntries()
+        return $questionnaire->assessmentResponseAttempts()->exists()
+            || $questionnaire->learningSetEntries()
             ->whereHas('learningSet', fn ($query) => $query
                 ->whereIn('status', ['published', 'active'])
                 ->orWhereHas('assignments'))
