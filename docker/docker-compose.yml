@@ -6,34 +6,43 @@ services:
     image: schoolmaster/php:8.3
     volumes:
       - ../:/var/www/html
+      - ../../schoolmaster-specs:/var/www/schoolmaster-specs:ro
+      - ../../schoolmaster-specs:/schoolmaster-specs:ro
     networks:
       default:
         aliases:
           - ${SERVERNAME_REST}
+          - mysql
     environment:
-      DB_CONNECTION: ${DB_CONNECTION}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: schoolmaster_testing
+      DB_USERNAME: schoolmaster
+      DB_PASSWORD: secret
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      MAIL_MAILER: array
       #SERVER_NAME: ${SERVERNAME_REST}
       DOCUMENT_ROOT: public
     depends_on:
-      dbmysql:
+      mysql:
         condition: service_healthy
     ports:
       - "8001:80"
 
-  dbmysql:
+  mysql:
     image: mysql:8.4
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${DB_DATABASE}
-      - MYSQL_USER=${DB_USERNAME}
-      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     ports:
-      - "${DB_FORWARD_PORT}:3306"
+      - "${MYSQL_FORWARD_PORT}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
