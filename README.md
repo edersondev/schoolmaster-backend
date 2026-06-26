@@ -180,10 +180,12 @@ Use Docker Compose when the host PHP runtime does not include a PDO database
 driver or when tests should run against MySQL:
 
 ```bash
-docker compose build app
-docker compose run --rm app composer install
-docker compose run --rm app php artisan test
+cp docker/.env.example docker/.env
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml up -d
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml exec app php artisan test
 ```
 
-The Compose stack provides PHP 8.3 with `pdo_mysql` and a MySQL 8 test database
-named `schoolmaster_testing`.
+The Compose stack provides PHP 8.3 with `pdo_mysql`, a main MySQL container
+published on `3306`, and a dedicated test MySQL container published on `3308`.
+PHPUnit uses `.env.testing`, which points to the `dbmysql_test` service on the
+container network.
