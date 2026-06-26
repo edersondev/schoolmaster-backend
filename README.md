@@ -180,6 +180,7 @@ Use Docker Compose when the host PHP runtime does not include a PDO database
 driver or when tests should run against MySQL:
 
 ```bash
+cp docker/.env.example docker/.env
 docker compose -f docker/docker-compose.yml build app
 docker compose -f docker/docker-compose.yml run --rm app composer install
 docker compose -f docker/docker-compose.yml run --rm app php artisan test
