@@ -119,7 +119,7 @@ For additional implementation context, read the current plan in the `/specs`
 directory before making substantial changes.
 
 Current active feature implementation context:
-`specs/specs/013-platform-support-access/quickstart.md`.
+`specs/specs/019-centralize-addresses/plan.md`.
 <!-- SPECKIT END -->
 
 ===
