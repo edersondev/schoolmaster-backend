@@ -7,18 +7,23 @@ namespace App\Services;
 use App\DTOs\AuditEventData;
 use App\Models\School;
 use App\Models\User;
+use App\Services\Addresses\SchoolAddressService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 final class SchoolService
 {
-    public function __construct(private readonly AuditEventService $audit) {}
+    public function __construct(
+        private readonly AuditEventService $audit,
+        private readonly SchoolAddressService $addresses,
+    ) {}
 
     public function list(User $actor, array $filters): LengthAwarePaginator
     {
         $this->assertPlatformPermission($actor, 'schools.view');
 
         return School::query()
+            ->with('address')
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->orderBy('name')
             ->paginate((int) ($filters['per_page'] ?? 15));
@@ -28,7 +33,15 @@ final class SchoolService
     {
         $this->assertPlatformPermission($actor, 'schools.manage');
 
+        $addressPayload = $data['address'] ?? null;
+        unset($data['address']);
+
         $school = School::query()->create($data);
+
+        if ($addressPayload !== null) {
+            $this->addresses->applySubmittedAddress($school, ['address' => $addressPayload]);
+            $school->load('address');
+        }
 
         $this->audit->record(new AuditEventData(
             eventType: 'school_created',
@@ -47,7 +60,7 @@ final class SchoolService
     {
         $this->assertPlatformPermission($actor, 'schools.view');
 
-        return School::query()->where('uuid', $schoolUuid)->firstOrFail();
+        return School::query()->with('address')->where('uuid', $schoolUuid)->firstOrFail();
     }
 
     public function update(User $actor, string $schoolUuid, array $data, ?string $sourceIp = null): School
@@ -57,6 +70,9 @@ final class SchoolService
         /** @var School $school */
         $school = School::query()->where('uuid', $schoolUuid)->firstOrFail();
         $oldStatus = $school->status;
+        $this->addresses->applySubmittedAddress($school, $data);
+        unset($data['address']);
+
         $school->fill($data);
         $school->save();
 
@@ -75,7 +91,7 @@ final class SchoolService
             sourceIp: $sourceIp,
         ));
 
-        return $school;
+        return $school->refresh()->load('address');
     }
 
     private function assertPlatformPermission(User $actor, string $permission): void

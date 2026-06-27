@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
 use App\Services\AuditEventService;
+use App\Services\Addresses\SchoolAddressService;
 use App\Services\Concerns\AuthorizesAdministrationLifecycle;
 use App\Services\Roles\RoleService;
 use App\Services\TenantContextService;
@@ -32,6 +33,7 @@ final class AdministrationUpdateService
         private readonly UserService $users,
         private readonly RoleService $roles,
         private readonly AuditEventService $audit,
+        private readonly SchoolAddressService $addresses,
     ) {}
 
     public function update(User $actor, ?TenantContext $context, string $resourceType, string $uuid, UpdateAdministrationResourceData $data, ?string $sourceIp = null): Model
@@ -47,9 +49,12 @@ final class AdministrationUpdateService
         }
 
         $attributes = array_intersect_key($data->attributes, array_flip($config['mutable']));
+        $addressWasSubmitted = array_key_exists('address', $attributes);
+        $addressPayload = $attributes['address'] ?? null;
+        unset($attributes['address']);
         $fromStatus = (string) ($resource->getAttribute('status') ?? '');
 
-        return DB::transaction(function () use ($resource, $resourceType, $attributes, $data, $actor, $fromStatus, $sourceIp): Model {
+        return DB::transaction(function () use ($resource, $resourceType, $attributes, $data, $actor, $fromStatus, $sourceIp, $addressWasSubmitted, $addressPayload): Model {
             if ($resourceType === 'users' && array_key_exists('role_ids', $data->attributes)) {
                 /** @var User $resource */
                 $roles = $this->users->activeSchoolRoles($data->attributes['role_ids'], (int) $resource->school_id);
@@ -78,6 +83,10 @@ final class AdministrationUpdateService
 
             $resource->fill($attributes);
             $resource->save();
+
+            if ($resource instanceof School && $addressWasSubmitted) {
+                $this->addresses->applySubmittedAddress($resource, ['address' => $addressPayload]);
+            }
 
             $this->history->record(
                 $resource,

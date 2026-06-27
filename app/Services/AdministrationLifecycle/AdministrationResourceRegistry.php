@@ -25,8 +25,8 @@ final class AdministrationResourceRegistry
                 'model' => School::class,
                 'permission' => 'schools',
                 'scope' => 'platform',
-                'relations' => [],
-                'mutable' => ['name', 'status', 'contact_email', 'contact_phone', 'address_summary'],
+                'relations' => ['address'],
+                'mutable' => ['name', 'status', 'contact_email', 'contact_phone', 'address'],
             ],
             'users' => [
                 'model' => User::class,

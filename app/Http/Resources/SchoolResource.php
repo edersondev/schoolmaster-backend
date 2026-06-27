@@ -18,7 +18,7 @@ final class SchoolResource extends JsonResource
             'status' => $this->status,
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,
-            'address_summary' => $this->address_summary,
+            'address' => $this->address ? (new AddressResource($this->address))->resolve() : null,
         ];
     }
 }
