@@ -22,7 +22,6 @@ final class SchoolFactory extends Factory
             'status' => 'active',
             'contact_email' => fake()->safeEmail(),
             'contact_phone' => fake()->phoneNumber(),
-            'address_summary' => fake()->streetAddress(),
         ];
     }
 
