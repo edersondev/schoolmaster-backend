@@ -10,7 +10,7 @@ final class AuthSessionResource
 {
     public static function make(User $user, ?string $token, mixed $expiresAt): array
     {
-        $user->loadMissing(['school', 'roles.permissions']);
+        $user->loadMissing(['school.address', 'roles.permissions']);
         $permissions = $user->roles
             ->flatMap->permissions
             ->where('status', 'active')

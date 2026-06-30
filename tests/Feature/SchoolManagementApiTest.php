@@ -28,11 +28,15 @@ final class SchoolManagementApiTest extends TestCase
             'contact_email' => 'north@example.com',
         ])->assertCreated()
             ->assertJsonPath('data.name', 'North School')
+            ->assertJsonPath('data.address', null)
+            ->assertJsonMissingPath('data.address_summary')
             ->json('data');
 
         $this->withToken($token)->getJson('/api/v1/schools/'.$created['id'])
             ->assertOk()
-            ->assertJsonPath('data.code', 'NORTH');
+            ->assertJsonPath('data.code', 'NORTH')
+            ->assertJsonPath('data.address', null)
+            ->assertJsonMissingPath('data.address_summary');
 
         $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], [
             'status' => 'inactive',

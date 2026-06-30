@@ -10,10 +10,11 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'name', 'code', 'status', 'contact_email', 'contact_phone', 'address_summary'])]
+#[Fillable(['uuid', 'name', 'code', 'status', 'contact_email', 'contact_phone'])]
 #[Hidden(['id'])]
 final class School extends Model
 {
@@ -66,5 +67,10 @@ final class School extends Model
     public function platformSupportAuditEvents(): HasMany
     {
         return $this->hasMany(PlatformSupportAuditEvent::class);
+    }
+
+    public function address(): MorphOne
+    {
+        return $this->morphOne(Address::class, 'addressable');
     }
 }
