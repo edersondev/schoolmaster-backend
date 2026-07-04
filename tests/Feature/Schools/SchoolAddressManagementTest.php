@@ -20,7 +20,7 @@ final class SchoolAddressManagementTest extends TestCase
 
         $created = $this->withToken($token)->postJson('/api/v1/schools', [
             'name' => 'Address Lifecycle School',
-            'code' => 'ADDR-LIFE',
+            'cnpj' => '00.000.012/0001-16',
             'address' => $this->validAddressPayload(['number' => '101']),
         ])
             ->assertCreated()

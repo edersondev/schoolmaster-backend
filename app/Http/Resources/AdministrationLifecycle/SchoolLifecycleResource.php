@@ -15,7 +15,7 @@ final class SchoolLifecycleResource extends JsonResource
         return [
             'id' => $this->uuid,
             'name' => $this->name,
-            'code' => $this->code,
+            'cnpj' => $this->cnpj,
             'status' => $this->status,
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,

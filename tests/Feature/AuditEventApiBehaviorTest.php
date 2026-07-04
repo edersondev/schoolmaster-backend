@@ -28,7 +28,7 @@ final class AuditEventApiBehaviorTest extends TestCase
 
         $created = $this->withToken($login->json('data.token'))->postJson('/api/v1/schools', [
             'name' => 'Audit School',
-            'code' => 'AUDIT',
+            'cnpj' => '00.000.013/0001-60',
         ])->assertCreated()->json('data');
 
         $this->withToken($login->json('data.token'))->patchJson('/api/v1/schools/'.$created['id'], [

@@ -14,11 +14,13 @@ final class SchoolFactory extends Factory
 {
     protected $model = School::class;
 
+    private static int $cnpjSequence = 1;
+
     public function definition(): array
     {
         return [
             'name' => fake()->company().' School',
-            'code' => strtoupper(fake()->unique()->bothify('SCH###')),
+            'cnpj' => self::validCnpj(self::$cnpjSequence++),
             'status' => 'active',
             'contact_email' => fake()->safeEmail(),
             'contact_phone' => fake()->phoneNumber(),
@@ -28,5 +30,30 @@ final class SchoolFactory extends Factory
     public function inactive(): static
     {
         return $this->state(fn () => ['status' => 'inactive']);
+    }
+
+    private static function validCnpj(int $sequence): string
+    {
+        $base = str_pad((string) $sequence, 8, '0', STR_PAD_LEFT).'0001';
+        $firstDigit = self::checkDigit($base, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+        $secondDigit = self::checkDigit($base.$firstDigit, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+
+        return $base.$firstDigit.$secondDigit;
+    }
+
+    /**
+     * @param  array<int, int>  $weights
+     */
+    private static function checkDigit(string $base, array $weights): int
+    {
+        $sum = 0;
+
+        foreach ($weights as $index => $weight) {
+            $sum += ((int) $base[$index]) * $weight;
+        }
+
+        $remainder = $sum % 11;
+
+        return $remainder < 2 ? 0 : 11 - $remainder;
     }
 }

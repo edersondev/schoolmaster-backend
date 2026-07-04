@@ -24,17 +24,25 @@ final class SchoolManagementApiTest extends TestCase
 
         $created = $this->withToken($token)->postJson('/api/v1/schools', [
             'name' => 'North School',
-            'code' => 'NORTH',
+            'cnpj' => '56.563.930/0001-08',
             'contact_email' => 'north@example.com',
         ])->assertCreated()
             ->assertJsonPath('data.name', 'North School')
+            ->assertJsonPath('data.cnpj', '56563930000108')
             ->assertJsonPath('data.address', null)
+            ->assertJsonMissingPath('data.code')
             ->assertJsonMissingPath('data.address_summary')
             ->json('data');
 
+        $this->assertDatabaseHas('schools', [
+            'uuid' => $created['id'],
+            'cnpj' => '56563930000108',
+        ]);
+
         $this->withToken($token)->getJson('/api/v1/schools/'.$created['id'])
             ->assertOk()
-            ->assertJsonPath('data.code', 'NORTH')
+            ->assertJsonPath('data.cnpj', '56563930000108')
+            ->assertJsonMissingPath('data.code')
             ->assertJsonPath('data.address', null)
             ->assertJsonMissingPath('data.address_summary');
 
@@ -55,17 +63,39 @@ final class SchoolManagementApiTest extends TestCase
 
         $this->withToken($token)->postJson('/api/v1/schools', [
             'name' => 'Forbidden School',
-            'code' => 'FORBIDDEN',
+            'cnpj' => '11.222.333/0001-81',
         ])
             ->assertForbidden();
 
         $authorizedToken = $this->bearerTokenFor($this->createPlatformUser());
 
-        $this->withToken($authorizedToken)->postJson('/api/v1/schools', ['name' => 'Missing Code'])
+        $this->withToken($authorizedToken)->postJson('/api/v1/schools', ['name' => 'Missing CNPJ'])
             ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJson(fn ($json) => $json->has('error.details.fields.cnpj')->etc());
 
         $this->withToken($authorizedToken)->getJson('/api/v1/schools/00000000-0000-0000-0000-000000000000')
             ->assertNotFound();
+    }
+
+    public function test_school_cnpj_must_be_valid_and_unique(): void
+    {
+        $token = $this->bearerTokenFor($this->createPlatformUser());
+
+        School::factory()->create(['cnpj' => '56563930000108']);
+
+        $this->withToken($token)->postJson('/api/v1/schools', [
+            'name' => 'Duplicate School',
+            'cnpj' => '56.563.930/0001-08',
+        ])
+            ->assertUnprocessable()
+            ->assertJson(fn ($json) => $json->has('error.details.fields.cnpj')->etc());
+
+        $this->withToken($token)->postJson('/api/v1/schools', [
+            'name' => 'Invalid School',
+            'cnpj' => '11.111.111/1111-11',
+        ])
+            ->assertUnprocessable()
+            ->assertJson(fn ($json) => $json->has('error.details.fields.cnpj')->etc());
     }
 }

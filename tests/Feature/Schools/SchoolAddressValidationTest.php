@@ -18,7 +18,7 @@ final class SchoolAddressValidationTest extends TestCase
 
         $this->withToken($token)->postJson('/api/v1/schools', [
             'name' => 'North School',
-            'code' => 'NORTH-ADDR',
+            'cnpj' => '04.252.011/0001-10',
             'contact_email' => 'north-address@example.com',
             'address' => $this->validAddressPayload([
                 'country' => null,
@@ -31,7 +31,7 @@ final class SchoolAddressValidationTest extends TestCase
             ->assertJsonPath('data.address.complement', 'Block B')
             ->assertJsonPath('data.address.country', null);
 
-        $school = School::query()->where('code', 'NORTH-ADDR')->firstOrFail();
+        $school = School::query()->where('cnpj', '04252011000110')->firstOrFail();
 
         $this->assertDatabaseHas('addresses', [
             'school_id' => $school->id,
@@ -49,7 +49,7 @@ final class SchoolAddressValidationTest extends TestCase
 
         $response = $this->withToken($token)->postJson('/api/v1/schools', [
             'name' => 'Invalid Address School',
-            'code' => 'INVALID-ADDR',
+            'cnpj' => '00.000.010/0001-27',
             'address' => [
                 'street' => '',
                 'number' => '12A',
@@ -82,7 +82,7 @@ final class SchoolAddressValidationTest extends TestCase
 
         $this->withToken($token)->postJson('/api/v1/schools', [
             'name' => 'Legacy Address School',
-            'code' => 'LEGACY-ADDR',
+            'cnpj' => '00.000.011/0001-71',
             'address_summary' => 'Old free-form address',
         ])
             ->assertUnprocessable()

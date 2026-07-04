@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'name', 'code', 'status', 'contact_email', 'contact_phone'])]
+#[Fillable(['uuid', 'name', 'cnpj', 'status', 'contact_email', 'contact_phone'])]
 #[Hidden(['id'])]
 final class School extends Model
 {
