@@ -17,11 +17,18 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(PermissionSeeder::class);
 
-        $permissions = collect(['schools.view', 'schools.manage'])->mapWithKeys(function (string $code): array {
-            $permission = Permission::query()->where('code', $code)->firstOrFail();
-
-            return [$code => $permission];
-        });
+        $permissions = Permission::query()
+            ->whereIn('code', [
+                'schools.view',
+                'schools.manage',
+                'schools.lifecycle',
+                'platform_support.overview',
+                'platform_support.reporting',
+                'platform_support.drill_down',
+                'platform_support.approve',
+                'platform_support.audit',
+            ])
+            ->get();
 
         $role = Role::query()->firstOrCreate([
             'scope' => 'platform',
@@ -29,12 +36,12 @@ class DatabaseSeeder extends Seeder
         ]);
         $role->permissions()->sync($permissions->pluck('id')->all());
 
-        $user = User::query()->firstOrCreate([
+        $user = User::query()->updateOrCreate([
             'email' => 'admin@schoolmaster.local',
         ], [
             'name' => 'System Administrator',
             'full_name' => 'System Administrator',
-            'password' => Hash::make('password'),
+            'password' => Hash::make('password123'),
             'status' => 'active',
         ]);
         $user->roles()->syncWithoutDetaching([$role->id]);
