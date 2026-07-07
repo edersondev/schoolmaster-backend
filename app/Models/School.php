@@ -52,7 +52,7 @@ final class School extends Model
     {
         self::creating(function (School $school): void {
             $school->uuid ??= (string) Str::uuid();
-            $school->status ??= 1;
+            $school->status ??= 'active';
             $school->timezone ??= 'America/Sao_Paulo';
             $school->language ??= 'pt-BR';
             $school->primary_color ??= '#1D4ED8';

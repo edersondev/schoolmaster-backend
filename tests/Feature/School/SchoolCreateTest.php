@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\School;
 
 use App\Models\School;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -47,8 +49,38 @@ final class SchoolCreateTest extends TestCase
             'document' => '56563930000108',
             'cnpj' => '56563930000108',
             'normalized_email' => 'profile@example.com',
-            'status' => 1,
+            'status' => 'active',
         ]);
+    }
+
+    public function test_created_active_school_uses_canonical_status_for_tenant_checks(): void
+    {
+        $platformToken = $this->bearerTokenFor($this->createPlatformUser());
+
+        $created = $this->withToken($platformToken)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
+            'name' => 'Tenant Active School',
+            'document' => '56.563.930/0001-08',
+            'email' => 'tenant-active@example.com',
+            'status' => 1,
+        ]))->assertCreated()
+            ->assertJsonPath('data.status', 1)
+            ->json('data');
+
+        $school = School::query()->where('uuid', $created['id'])->firstOrFail();
+        User::factory()->create([
+            'school_id' => $school->id,
+            'email' => 'tenant-admin@example.com',
+            'password' => Hash::make('password'),
+            'status' => 'active',
+        ]);
+
+        $this->assertSame('active', $school->status);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'tenant-admin@example.com',
+            'password' => 'password',
+            'school_id' => $school->uuid,
+        ])->assertOk();
     }
 
     public function test_create_without_logo_persists_profile_with_null_logo_path(): void

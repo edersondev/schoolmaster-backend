@@ -22,7 +22,7 @@ final class SchoolProfileService
     public function create(SchoolProfileData $data): School
     {
         return DB::transaction(function () use ($data): School {
-            $school = School::query()->create($data->schoolAttributes(includeDocument: true));
+            $school = School::query()->create($data->schoolAttributes(includeDocument: true, includeDefaults: true));
             $this->addresses->applySubmittedAddress($school, ['address' => $data->address]);
 
             if ($data->logoFile !== null) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -92,11 +93,17 @@ return new class extends Migration
             }
         });
 
+        if (Schema::hasColumn('schools', 'cnpj') && Schema::hasColumn('schools', 'document')) {
+            DB::table('schools')
+                ->whereNull('document')
+                ->whereNotNull('cnpj')
+                ->update(['document' => DB::raw('cnpj')]);
+        }
+
         Schema::table('schools', function (Blueprint $table): void {
             $table->unique('inep_code', 'schools_inep_code_unique');
             $table->unique('document', 'schools_document_unique');
             $table->unique('normalized_email', 'schools_normalized_email_unique');
-            $table->index('status', 'schools_numeric_status_index');
         });
     }
 
@@ -106,7 +113,6 @@ return new class extends Migration
             $table->dropUnique('schools_inep_code_unique');
             $table->dropUnique('schools_document_unique');
             $table->dropUnique('schools_normalized_email_unique');
-            $table->dropIndex('schools_numeric_status_index');
             $table->dropColumn([
                 'inep_code',
                 'trade_name',

@@ -76,6 +76,40 @@ final class SchoolUpdateTest extends TestCase
             ->assertJson(fn ($json) => $json->has('error.details.fields.document')->etc());
     }
 
+    public function test_update_preserves_omitted_locale_and_branding_fields(): void
+    {
+        $token = $this->bearerTokenFor($this->createPlatformUser());
+
+        $created = $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
+            'document' => '56.563.930/0001-08',
+            'timezone' => 'America/Manaus',
+            'language' => 'en',
+            'primary_color' => '#047857',
+            'secondary_color' => '#DC2626',
+        ]))->assertCreated()->json('data');
+
+        $payload = $this->validSchoolProfilePayload([
+            'document' => $created['document'],
+            'name' => 'Omitted Defaults School',
+        ]);
+        unset($payload['timezone'], $payload['language'], $payload['primary_color'], $payload['secondary_color']);
+
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], $payload)
+            ->assertOk()
+            ->assertJsonPath('data.timezone', 'America/Manaus')
+            ->assertJsonPath('data.language', 'en')
+            ->assertJsonPath('data.primary_color', '#047857')
+            ->assertJsonPath('data.secondary_color', '#DC2626');
+
+        $this->assertDatabaseHas('schools', [
+            'uuid' => $created['id'],
+            'timezone' => 'America/Manaus',
+            'language' => 'en',
+            'primary_color' => '#047857',
+            'secondary_color' => '#DC2626',
+        ]);
+    }
+
     public function test_update_rejects_omitted_or_incomplete_address_and_duplicate_identity_fields(): void
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());

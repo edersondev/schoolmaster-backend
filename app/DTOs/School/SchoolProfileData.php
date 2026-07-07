@@ -36,6 +36,7 @@ final readonly class SchoolProfileData
         public string $primaryColor,
         public string $secondaryColor,
         public ?UploadedFile $logoFile,
+        public array $submittedFields,
     ) {}
 
     /**
@@ -66,17 +67,18 @@ final readonly class SchoolProfileData
             primaryColor: $data['primary_color'] ?? '#1D4ED8',
             secondaryColor: $data['secondary_color'] ?? '#F59E0B',
             logoFile: $logoFile,
+            submittedFields: array_keys($data),
         );
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function schoolAttributes(bool $includeDocument): array
+    public function schoolAttributes(bool $includeDocument, bool $includeDefaults = false): array
     {
         $attributes = [
             'inep_code' => $this->inepCode,
-            'status' => $this->status,
+            'status' => $this->status === null ? null : ($this->status === 1 ? 'active' : 'inactive'),
             'name' => $this->name,
             'trade_name' => $this->tradeName,
             'legal_name' => $this->legalName,
@@ -95,6 +97,14 @@ final readonly class SchoolProfileData
             'primary_color' => $this->primaryColor,
             'secondary_color' => $this->secondaryColor,
         ];
+
+        if (! $includeDefaults) {
+            foreach (['timezone', 'language', 'primary_color', 'secondary_color'] as $field) {
+                if (! in_array($field, $this->submittedFields, true)) {
+                    unset($attributes[$field]);
+                }
+            }
+        }
 
         if ($includeDocument) {
             $attributes['document'] = $this->document;
