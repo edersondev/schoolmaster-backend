@@ -16,22 +16,22 @@ final class SchoolAddressValidationTest extends TestCase
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
 
-        $this->withToken($token)->postJson('/api/v1/schools', [
+        $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'North School',
-            'cnpj' => '04.252.011/0001-10',
-            'contact_email' => 'north-address@example.com',
+            'document' => '04.252.011/0001-10',
+            'email' => 'north-address@example.com',
             'address' => $this->validAddressPayload([
                 'country' => null,
                 'complement' => 'Block B',
             ]),
-        ])
+        ]))
             ->assertCreated()
             ->assertJsonPath('data.address.street', 'Main Street')
             ->assertJsonPath('data.address.number', '123')
             ->assertJsonPath('data.address.complement', 'Block B')
             ->assertJsonPath('data.address.country', null);
 
-        $school = School::query()->where('cnpj', '04252011000110')->firstOrFail();
+        $school = School::query()->where('document', '04252011000110')->firstOrFail();
 
         $this->assertDatabaseHas('addresses', [
             'school_id' => $school->id,
@@ -47,9 +47,8 @@ final class SchoolAddressValidationTest extends TestCase
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
 
-        $response = $this->withToken($token)->postJson('/api/v1/schools', [
+        $response = $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'Invalid Address School',
-            'cnpj' => '00.000.010/0001-27',
             'address' => [
                 'street' => '',
                 'number' => '12A',
@@ -59,7 +58,7 @@ final class SchoolAddressValidationTest extends TestCase
                 'zip_code' => '12345-678',
                 'unexpected' => 'not allowed',
             ],
-        ]);
+        ]));
 
         $response
             ->assertUnprocessable()
@@ -80,31 +79,36 @@ final class SchoolAddressValidationTest extends TestCase
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
 
-        $this->withToken($token)->postJson('/api/v1/schools', [
+        $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'Legacy Address School',
-            'cnpj' => '00.000.011/0001-71',
             'address_summary' => 'Old free-form address',
-        ])
+        ]))
             ->assertUnprocessable()
             ->assertJson(fn ($json) => $json->has('error.details.fields.address_summary')->etc());
 
         $school = School::factory()->create();
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, [
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, $this->validSchoolProfilePayload([
             'address_summary' => 'Old free-form address',
-        ])
+        ]))
             ->assertUnprocessable()
             ->assertJson(fn ($json) => $json->has('error.details.fields.address_summary')->etc());
     }
 
-    public function test_platform_user_can_replace_and_remove_school_address(): void
+    public function test_platform_user_can_replace_school_address_and_null_address_is_rejected(): void
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
-        $school = School::factory()->create();
+        $profile = $this->validSchoolProfilePayload();
+        $school = School::factory()->create([
+            'inep_code' => $profile['inep_code'],
+            'document' => $profile['document'],
+            'email' => $profile['email'],
+        ]);
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, [
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, $this->validSchoolProfilePayload([
+            'document' => $school->document,
             'address' => $this->validAddressPayload(['number' => '321']),
-        ])
+        ]))
             ->assertOk()
             ->assertJsonPath('data.address.number', '321');
 
@@ -116,9 +120,10 @@ final class SchoolAddressValidationTest extends TestCase
             'deleted_at' => null,
         ]);
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, [
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, $this->validSchoolProfilePayload([
+            'document' => $school->document,
             'address' => $this->validAddressPayload(['number' => '654']),
-        ])
+        ]))
             ->assertOk()
             ->assertJsonPath('data.address.number', '654');
 
@@ -127,10 +132,10 @@ final class SchoolAddressValidationTest extends TestCase
         $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, [
             'address' => null,
         ])
-            ->assertOk()
-            ->assertJsonPath('data.address', null);
+            ->assertUnprocessable()
+            ->assertJson(fn ($json) => $json->has('error.details.fields.address')->etc());
 
-        $this->assertSame(0, $school->address()->count());
+        $this->assertSame(1, $school->address()->count());
     }
 
     /**

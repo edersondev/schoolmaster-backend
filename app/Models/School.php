@@ -14,7 +14,34 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-#[Fillable(['uuid', 'name', 'cnpj', 'status', 'contact_email', 'contact_phone'])]
+#[Fillable([
+    'uuid',
+    'inep_code',
+    'name',
+    'trade_name',
+    'legal_name',
+    'cnpj',
+    'document',
+    'email',
+    'normalized_email',
+    'phone',
+    'website',
+    'description',
+    'status',
+    'contact_email',
+    'contact_phone',
+    'administrative_type_id',
+    'legal_nature_id',
+    'management_type_id',
+    'pedagogical_approach_id',
+    'education_level_ids',
+    'modality_ids',
+    'timezone',
+    'language',
+    'logo_path',
+    'primary_color',
+    'secondary_color',
+])]
 #[Hidden(['id'])]
 final class School extends Model
 {
@@ -25,8 +52,30 @@ final class School extends Model
     {
         self::creating(function (School $school): void {
             $school->uuid ??= (string) Str::uuid();
-            $school->status ??= 'active';
+            $school->status ??= 1;
+            $school->timezone ??= 'America/Sao_Paulo';
+            $school->language ??= 'pt-BR';
+            $school->primary_color ??= '#1D4ED8';
+            $school->secondary_color ??= '#F59E0B';
         });
+
+        self::saving(function (School $school): void {
+            if ($school->email !== null) {
+                $school->normalized_email = strtolower($school->email);
+            }
+        });
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'administrative_type_id' => 'integer',
+            'legal_nature_id' => 'integer',
+            'management_type_id' => 'integer',
+            'pedagogical_approach_id' => 'integer',
+            'education_level_ids' => 'array',
+            'modality_ids' => 'array',
+        ];
     }
 
     public function users(): HasMany

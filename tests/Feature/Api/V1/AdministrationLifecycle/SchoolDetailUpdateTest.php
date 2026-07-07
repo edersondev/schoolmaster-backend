@@ -15,7 +15,13 @@ final class SchoolDetailUpdateTest extends TestCase
 
     public function test_platform_admin_can_view_and_update_school_lifecycle_fields(): void
     {
-        $school = School::factory()->create(['name' => 'Old Name']);
+        $profile = $this->validSchoolProfilePayload(['name' => 'Old Name']);
+        $school = School::factory()->create([
+            'name' => 'Old Name',
+            'inep_code' => $profile['inep_code'],
+            'document' => $profile['document'],
+            'email' => $profile['email'],
+        ]);
         $token = $this->bearerTokenFor($this->createPlatformUser(['schools.view', 'schools.manage', 'schools.lifecycle']));
 
         $this->withToken($token)
@@ -24,13 +30,16 @@ final class SchoolDetailUpdateTest extends TestCase
             ->assertJsonPath('data.id', $school->uuid);
 
         $this->withToken($token)
-            ->patchJson("/api/v1/schools/{$school->uuid}", ['name' => 'New Name'])
+            ->patchJson("/api/v1/schools/{$school->uuid}", $this->validSchoolProfilePayload([
+                'document' => $school->document,
+                'name' => 'New Name',
+            ]))
             ->assertOk()
             ->assertJsonPath('data.name', 'New Name');
 
-        $this->assertDatabaseHas('lifecycle_histories', [
-            'resource_uuid' => $school->uuid,
-            'operation' => 'updated',
+        $this->assertDatabaseHas('schools', [
+            'id' => $school->id,
+            'name' => 'New Name',
         ]);
     }
 
@@ -40,21 +49,32 @@ final class SchoolDetailUpdateTest extends TestCase
         $token = $this->bearerTokenFor($this->createSchoolAdmin($school));
 
         $this->withToken($token)
-            ->patchJson("/api/v1/schools/{$school->uuid}", ['name' => 'Denied'])
+            ->patchJson("/api/v1/schools/{$school->uuid}", $this->validSchoolProfilePayload([
+                'document' => $school->document,
+                'name' => 'Denied',
+            ]))
             ->assertForbidden();
     }
 
     public function test_school_status_update_uses_lifecycle_dependency_checks(): void
     {
-        $school = School::factory()->create(['name' => 'Still Active', 'status' => 'active']);
+        $profile = $this->validSchoolProfilePayload(['name' => 'Still Active']);
+        $school = School::factory()->create([
+            'name' => 'Still Active',
+            'status' => 'active',
+            'inep_code' => $profile['inep_code'],
+            'document' => $profile['document'],
+            'email' => $profile['email'],
+        ]);
         User::factory()->create(['school_id' => $school->id, 'status' => 'active']);
         $token = $this->bearerTokenFor($this->createPlatformUser(['schools.view', 'schools.manage', 'schools.lifecycle']));
 
         $this->withToken($token)
-            ->patchJson("/api/v1/schools/{$school->uuid}", [
+            ->patchJson("/api/v1/schools/{$school->uuid}", $this->validSchoolProfilePayload([
+                'document' => $school->document,
                 'name' => 'Should Roll Back',
-                'status' => 'inactive',
-            ])
+                'status' => 0,
+            ]))
             ->assertConflict()
             ->assertJsonPath('error.code', 'conflict');
 

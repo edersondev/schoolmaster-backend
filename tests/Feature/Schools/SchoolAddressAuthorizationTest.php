@@ -14,10 +14,16 @@ final class SchoolAddressAuthorizationTest extends TestCase
 
     public function test_address_mutation_uses_school_management_authorization_boundary(): void
     {
-        $school = School::factory()->create();
+        $profile = $this->validSchoolProfilePayload();
+        $school = School::factory()->create([
+            'inep_code' => $profile['inep_code'],
+            'document' => $profile['document'],
+            'email' => $profile['email'],
+        ]);
         $token = $this->bearerTokenFor($this->createPlatformUser(['schools.view']));
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, [
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, $this->validSchoolProfilePayload([
+            'document' => $school->document,
             'address' => [
                 'street' => 'Forbidden Street',
                 'number' => '123',
@@ -26,7 +32,7 @@ final class SchoolAddressAuthorizationTest extends TestCase
                 'state' => 'SP',
                 'zip_code' => '12345678',
             ],
-        ])
+        ]))
             ->assertForbidden();
 
         $this->assertDatabaseMissing('addresses', [

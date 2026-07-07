@@ -22,80 +22,87 @@ final class SchoolManagementApiTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['data', 'meta' => ['page', 'per_page', 'total']]);
 
-        $created = $this->withToken($token)->postJson('/api/v1/schools', [
+        $created = $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'North School',
-            'cnpj' => '56.563.930/0001-08',
-            'contact_email' => 'north@example.com',
-        ])->assertCreated()
+            'document' => '56.563.930/0001-08',
+            'email' => 'north@example.com',
+        ]))->assertCreated()
             ->assertJsonPath('data.name', 'North School')
-            ->assertJsonPath('data.cnpj', '56563930000108')
-            ->assertJsonPath('data.address', null)
+            ->assertJsonPath('data.document', '56563930000108')
+            ->assertJsonPath('data.status', 1)
+            ->assertJsonPath('data.address.street', 'Main Street')
             ->assertJsonMissingPath('data.code')
+            ->assertJsonMissingPath('data.cnpj')
             ->assertJsonMissingPath('data.address_summary')
             ->json('data');
 
         $this->assertDatabaseHas('schools', [
             'uuid' => $created['id'],
-            'cnpj' => '56563930000108',
+            'document' => '56563930000108',
+            'normalized_email' => 'north@example.com',
         ]);
 
         $this->withToken($token)->getJson('/api/v1/schools/'.$created['id'])
             ->assertOk()
-            ->assertJsonPath('data.cnpj', '56563930000108')
+            ->assertJsonPath('data.document', '56563930000108')
             ->assertJsonMissingPath('data.code')
-            ->assertJsonPath('data.address', null)
+            ->assertJsonMissingPath('data.cnpj')
+            ->assertJsonPath('data.address.street', 'Main Street')
             ->assertJsonMissingPath('data.address_summary');
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], [
-            'status' => 'inactive',
-        ])->assertOk()
-            ->assertJsonPath('data.status', 'inactive');
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], $this->validSchoolProfilePayload([
+            'status' => 0,
+            'document' => $created['document'],
+            'email' => 'north-updated@example.com',
+        ]))->assertOk()
+            ->assertJsonPath('data.status', 0);
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], [
-            'status' => 'active',
-        ])->assertOk()
-            ->assertJsonPath('data.status', 'active');
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], $this->validSchoolProfilePayload([
+            'status' => 1,
+            'document' => $created['document'],
+            'email' => 'north-reactivated@example.com',
+        ]))->assertOk()
+            ->assertJsonPath('data.status', 1);
     }
 
     public function test_validation_forbidden_and_not_found_cases(): void
     {
         $token = $this->bearerTokenFor($this->createPlatformUser([]));
 
-        $this->withToken($token)->postJson('/api/v1/schools', [
+        $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'Forbidden School',
-            'cnpj' => '11.222.333/0001-81',
-        ])
+        ]))
             ->assertForbidden();
 
         $authorizedToken = $this->bearerTokenFor($this->createPlatformUser());
 
-        $this->withToken($authorizedToken)->postJson('/api/v1/schools', ['name' => 'Missing CNPJ'])
+        $this->withToken($authorizedToken)->postJson('/api/v1/schools', ['name' => 'Missing Document'])
             ->assertUnprocessable()
             ->assertJsonPath('error.code', 'validation_failed')
-            ->assertJson(fn ($json) => $json->has('error.details.fields.cnpj')->etc());
+            ->assertJson(fn ($json) => $json->has('error.details.fields.document')->etc());
 
         $this->withToken($authorizedToken)->getJson('/api/v1/schools/00000000-0000-0000-0000-000000000000')
             ->assertNotFound();
     }
 
-    public function test_school_cnpj_must_be_valid_and_unique(): void
+    public function test_school_document_must_be_valid_and_unique(): void
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
 
-        School::factory()->create(['cnpj' => '56563930000108']);
+        School::factory()->create(['document' => '56563930000108']);
 
-        $this->withToken($token)->postJson('/api/v1/schools', [
+        $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'Duplicate School',
-            'cnpj' => '56.563.930/0001-08',
-        ])
+            'document' => '56.563.930/0001-08',
+        ]))
             ->assertUnprocessable()
-            ->assertJson(fn ($json) => $json->has('error.details.fields.cnpj')->etc());
+            ->assertJson(fn ($json) => $json->has('error.details.fields.document')->etc());
 
-        $this->withToken($token)->postJson('/api/v1/schools', [
+        $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'Invalid School',
-            'cnpj' => '11.111.111/1111-11',
-        ])
+            'document' => '11.111.111/1111-11',
+        ]))
             ->assertUnprocessable()
-            ->assertJson(fn ($json) => $json->has('error.details.fields.cnpj')->etc());
+            ->assertJson(fn ($json) => $json->has('error.details.fields.document')->etc());
     }
 }

@@ -51,7 +51,7 @@ final class AuthTokenLifecycleService
             throw new TokenRejectedException('inactive_user', 'Inactive users cannot access protected workflows.');
         }
 
-        if ($token->user->school !== null && $token->user->school->status !== 'active') {
+        if ($token->user->school !== null && ! in_array($token->user->school->status, ['active', 1, '1'], true)) {
             throw new TokenRejectedException('inactive_school', 'Inactive schools cannot access protected workflows.');
         }
 
