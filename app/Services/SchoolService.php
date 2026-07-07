@@ -27,7 +27,8 @@ final class SchoolService
         return School::query()
             ->with('address')
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-            ->orderBy('name')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate((int) ($filters['per_page'] ?? 15));
     }
 

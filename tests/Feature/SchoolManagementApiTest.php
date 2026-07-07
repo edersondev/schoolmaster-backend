@@ -85,6 +85,28 @@ final class SchoolManagementApiTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_school_list_orders_newest_created_first(): void
+    {
+        $token = $this->bearerTokenFor($this->createPlatformUser());
+        $now = now();
+
+        $older = School::factory()->create([
+            'name' => 'Older School',
+            'created_at' => $now->copy()->subDay(),
+            'updated_at' => $now->copy()->subDay(),
+        ]);
+        $newer = School::factory()->create([
+            'name' => 'Newer School',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->withToken($token)->getJson('/api/v1/schools')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $newer->uuid)
+            ->assertJsonPath('data.1.id', $older->uuid);
+    }
+
     public function test_school_document_must_be_valid_and_unique(): void
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
