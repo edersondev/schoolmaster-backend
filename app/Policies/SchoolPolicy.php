@@ -28,4 +28,9 @@ final class SchoolPolicy extends ScopePolicy
     {
         return $this->platform($user, 'schools.manage');
     }
+
+    public function viewLookups(User $user): bool
+    {
+        return $this->platform($user, 'schools.view') || $this->platform($user, 'schools.manage');
+    }
 }

@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\DTOs\AuditEventData;
+use App\DTOs\School\SchoolProfileData;
 use App\Models\School;
 use App\Models\User;
-use App\Services\Addresses\SchoolAddressService;
+use App\Services\School\SchoolProfileService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 
 final class SchoolService
 {
     public function __construct(
         private readonly AuditEventService $audit,
-        private readonly SchoolAddressService $addresses,
+        private readonly SchoolProfileService $profiles,
     ) {}
 
     public function list(User $actor, array $filters): LengthAwarePaginator
@@ -25,23 +27,16 @@ final class SchoolService
         return School::query()
             ->with('address')
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-            ->orderBy('name')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate((int) ($filters['per_page'] ?? 15));
     }
 
-    public function create(User $actor, array $data, ?string $sourceIp = null): School
+    public function create(User $actor, array $data, ?string $sourceIp = null, ?UploadedFile $logoFile = null): School
     {
         $this->assertPlatformPermission($actor, 'schools.manage');
 
-        $addressPayload = $data['address'] ?? null;
-        unset($data['address']);
-
-        $school = School::query()->create($data);
-
-        if ($addressPayload !== null) {
-            $this->addresses->applySubmittedAddress($school, ['address' => $addressPayload]);
-            $school->load('address');
-        }
+        $school = $this->profiles->create(SchoolProfileData::fromArray($data, $logoFile));
 
         $this->audit->record(new AuditEventData(
             eventType: 'school_created',
@@ -63,22 +58,18 @@ final class SchoolService
         return School::query()->with('address')->where('uuid', $schoolUuid)->firstOrFail();
     }
 
-    public function update(User $actor, string $schoolUuid, array $data, ?string $sourceIp = null): School
+    public function update(User $actor, string $schoolUuid, array $data, ?string $sourceIp = null, ?UploadedFile $logoFile = null): School
     {
         $this->assertPlatformPermission($actor, 'schools.manage');
 
         /** @var School $school */
         $school = School::query()->where('uuid', $schoolUuid)->firstOrFail();
         $oldStatus = $school->status;
-        $this->addresses->applySubmittedAddress($school, $data);
-        unset($data['address']);
-
-        $school->fill($data);
-        $school->save();
+        $school = $this->profiles->update($school, SchoolProfileData::fromArray($data, $logoFile));
 
         $eventType = 'school_updated';
-        if (isset($data['status']) && $data['status'] !== $oldStatus) {
-            $eventType = $data['status'] === 'active' ? 'school_activated' : 'school_deactivated';
+        if (isset($data['status']) && (int) $data['status'] !== (int) $oldStatus) {
+            $eventType = (int) $data['status'] === 1 ? 'school_activated' : 'school_deactivated';
         }
 
         $this->audit->record(new AuditEventData(
@@ -91,7 +82,7 @@ final class SchoolService
             sourceIp: $sourceIp,
         ));
 
-        return $school->refresh()->load('address');
+        return $school;
     }
 
     private function assertPlatformPermission(User $actor, string $permission): void

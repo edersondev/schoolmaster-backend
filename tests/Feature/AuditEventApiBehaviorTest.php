@@ -26,14 +26,15 @@ final class AuditEventApiBehaviorTest extends TestCase
             'password' => 'password',
         ])->assertOk();
 
-        $created = $this->withToken($login->json('data.token'))->postJson('/api/v1/schools', [
+        $created = $this->withToken($login->json('data.token'))->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'Audit School',
-            'cnpj' => '00.000.013/0001-60',
-        ])->assertCreated()->json('data');
+            'document' => '00.000.013/0001-60',
+        ]))->assertCreated()->json('data');
 
-        $this->withToken($login->json('data.token'))->patchJson('/api/v1/schools/'.$created['id'], [
-            'status' => 'inactive',
-        ])->assertOk();
+        $this->withToken($login->json('data.token'))->patchJson('/api/v1/schools/'.$created['id'], $this->validSchoolProfilePayload([
+            'document' => $created['document'],
+            'status' => 0,
+        ]))->assertOk();
 
         $this->withToken($login->json('data.token'))->postJson('/api/v1/auth/logout')->assertOk();
         $this->withToken($login->json('data.token'))->getJson('/api/v1/auth/me')->assertUnauthorized();

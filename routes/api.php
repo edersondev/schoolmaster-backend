@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\RoleController;
 use App\Http\Controllers\Api\V1\RosterMembershipController;
 use App\Http\Controllers\Api\V1\SchoolController;
 use App\Http\Controllers\Api\V1\SchoolLifecycleController;
+use App\Http\Controllers\Api\V1\SchoolLookupController;
 use App\Http\Controllers\Api\V1\StudentAttendanceController;
 use App\Http\Controllers\Api\V1\Student\StudentAssessmentController;
 use App\Http\Controllers\Api\V1\StudentGradeController;
@@ -59,12 +60,18 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/schools', [SchoolController::class, 'index'])->name('api.v1.schools.index');
         Route::post('/schools', [SchoolController::class, 'store'])->name('api.v1.schools.store');
-        Route::get('/schools/{schoolId}', [SchoolLifecycleController::class, 'show'])->whereUuid('schoolId')->name('api.v1.schools.show');
-        Route::patch('/schools/{schoolId}', [SchoolLifecycleController::class, 'update'])->whereUuid('schoolId')->name('api.v1.schools.update');
+        Route::get('/schools/{schoolId}', [SchoolController::class, 'show'])->whereUuid('schoolId')->name('api.v1.schools.show');
+        Route::patch('/schools/{schoolId}', [SchoolController::class, 'update'])->whereUuid('schoolId')->name('api.v1.schools.update');
         Route::post('/schools/{schoolId}/activate', [SchoolLifecycleController::class, 'activate'])->whereUuid('schoolId')->name('api.v1.schools.activate');
         Route::post('/schools/{schoolId}/deactivate', [SchoolLifecycleController::class, 'deactivate'])->whereUuid('schoolId')->name('api.v1.schools.deactivate');
         Route::delete('/schools/{schoolId}', [SchoolLifecycleController::class, 'delete'])->whereUuid('schoolId')->name('api.v1.schools.delete');
         Route::post('/schools/{schoolId}/restore', [SchoolLifecycleController::class, 'restore'])->whereUuid('schoolId')->name('api.v1.schools.restore');
+        Route::get('/school-lookups/administrative-types', [SchoolLookupController::class, 'administrativeTypes'])->name('api.v1.school-lookups.administrative-types');
+        Route::get('/school-lookups/legal-natures', [SchoolLookupController::class, 'legalNatures'])->name('api.v1.school-lookups.legal-natures');
+        Route::get('/school-lookups/management-types', [SchoolLookupController::class, 'managementTypes'])->name('api.v1.school-lookups.management-types');
+        Route::get('/school-lookups/pedagogical-approaches', [SchoolLookupController::class, 'pedagogicalApproaches'])->name('api.v1.school-lookups.pedagogical-approaches');
+        Route::get('/school-lookups/education-levels', [SchoolLookupController::class, 'educationLevels'])->name('api.v1.school-lookups.education-levels');
+        Route::get('/school-lookups/modalities', [SchoolLookupController::class, 'modalities'])->name('api.v1.school-lookups.modalities');
         Route::post('/schools/{schoolId}/support-opt-ins', [PlatformSupportController::class, 'createSchoolSupportOptIn'])->whereUuid('schoolId')->name('api.v1.schools.support-opt-ins.store');
         Route::post('/schools/{schoolId}/support-opt-ins/{supportOptInId}/revoke', [PlatformSupportController::class, 'revokeSchoolSupportOptIn'])->whereUuid('schoolId')->whereUuid('supportOptInId')->name('api.v1.schools.support-opt-ins.revoke');
 

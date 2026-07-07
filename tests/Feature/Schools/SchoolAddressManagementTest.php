@@ -18,11 +18,10 @@ final class SchoolAddressManagementTest extends TestCase
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
 
-        $created = $this->withToken($token)->postJson('/api/v1/schools', [
+        $created = $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'Address Lifecycle School',
-            'cnpj' => '00.000.012/0001-16',
             'address' => $this->validAddressPayload(['number' => '101']),
-        ])
+        ]))
             ->assertCreated()
             ->assertJsonPath('data.address.number', '101')
             ->assertJsonMissingPath('data.address_summary')
@@ -38,23 +37,25 @@ final class SchoolAddressManagementTest extends TestCase
             ->assertJsonPath('data.0.address.number', '101')
             ->assertJsonMissingPath('data.0.address_summary');
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], [
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], $this->validSchoolProfilePayload([
             'name' => 'Renamed Address Lifecycle School',
-        ])
+            'document' => $created['document'],
+            'address' => $this->validAddressPayload(['number' => '101']),
+        ]))
             ->assertOk()
             ->assertJsonPath('data.address.number', '101');
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], [
+        $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], $this->validSchoolProfilePayload([
+            'document' => $created['document'],
             'address' => $this->validAddressPayload(['number' => '202']),
-        ])
+        ]))
             ->assertOk()
             ->assertJsonPath('data.address.number', '202');
 
         $this->withToken($token)->patchJson('/api/v1/schools/'.$created['id'], [
             'address' => null,
         ])
-            ->assertOk()
-            ->assertJsonPath('data.address', null);
+            ->assertUnprocessable();
     }
 
     public function test_database_rejects_duplicate_active_address_for_same_owner(): void

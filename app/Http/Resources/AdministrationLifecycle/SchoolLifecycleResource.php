@@ -14,11 +14,12 @@ final class SchoolLifecycleResource extends JsonResource
     {
         return [
             'id' => $this->uuid,
+            'inep_code' => $this->inep_code,
             'name' => $this->name,
-            'cnpj' => $this->cnpj,
-            'status' => $this->status,
-            'contact_email' => $this->contact_email,
-            'contact_phone' => $this->contact_phone,
+            'document' => $this->document,
+            'status' => $this->status === 'active' ? 1 : (int) $this->status,
+            'email' => $this->email,
+            'phone' => $this->phone,
             'address' => $this->address ? (new AddressResource($this->address))->resolve() : null,
         ];
     }
