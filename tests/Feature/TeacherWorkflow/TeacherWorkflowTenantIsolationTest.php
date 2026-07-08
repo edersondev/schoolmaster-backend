@@ -22,7 +22,7 @@ final class TeacherWorkflowTenantIsolationTest extends TestCase
     {
         [$school, $teacher, $admin, $student, $period] = $this->context();
         [$otherSchool, $otherTeacher, , $otherStudent, $otherPeriod] = $this->context();
-        $inactiveSchool = School::factory()->create(['status' => 'inactive']);
+        $inactiveSchool = School::factory()->create(['status' => School::STATUS_INACTIVE]);
         $content = TeacherWorkflowFactory::cleanContent($school, $teacher);
         $grade = TeacherWorkflowFactory::grade($school, $teacher, $period, $student);
         $otherGrade = TeacherWorkflowFactory::grade($otherSchool, $otherTeacher, $otherPeriod, $otherStudent);

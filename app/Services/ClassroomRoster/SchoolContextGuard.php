@@ -16,7 +16,7 @@ final class SchoolContextGuard
             throw new TenantContextException('Tenant context is missing, inactive, or outside permitted scope.');
         }
 
-        if ($context->school->status !== 'active') {
+        if (! $context->school->isActive()) {
             throw new TenantContextException('Tenant context is inactive.');
         }
 

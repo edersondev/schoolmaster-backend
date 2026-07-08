@@ -75,7 +75,7 @@ final class AccountRecoveryService
             throw new ConflictException('Only inactive accounts can be reactivated.');
         }
 
-        if ($target->school !== null && $target->school->status !== 'active') {
+        if ($target->school !== null && ! $target->school->isActive()) {
             throw new ConflictException('Inactive schools cannot reactivate account access.');
         }
 

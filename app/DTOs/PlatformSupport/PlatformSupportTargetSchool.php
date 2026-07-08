@@ -11,7 +11,7 @@ final readonly class PlatformSupportTargetSchool
     public function __construct(
         public int $id,
         public string $uuid,
-        public string $status,
+        public int $status,
     ) {}
 
     public static function fromSchool(School $school): self
@@ -19,7 +19,7 @@ final readonly class PlatformSupportTargetSchool
         return new self(
             id: $school->id,
             uuid: $school->uuid,
-            status: $school->status,
+            status: (int) $school->status,
         );
     }
 }

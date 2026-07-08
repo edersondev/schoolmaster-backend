@@ -134,7 +134,7 @@ final class PasswordResetService
                 throw new ConflictException('Account is not eligible for password reset.');
             }
 
-            if ($user->school !== null && $user->school->status !== 'active') {
+            if ($user->school !== null && ! $user->school->isActive()) {
                 throw new ConflictException('Inactive schools cannot complete password reset.');
             }
 
@@ -172,7 +172,7 @@ final class PasswordResetService
             return null;
         }
 
-        if ($user->school !== null && $user->school->status !== 'active') {
+        if ($user->school !== null && ! $user->school->isActive()) {
             return null;
         }
 

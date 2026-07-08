@@ -49,6 +49,7 @@ final class AdministrationUpdateService
         }
 
         $attributes = array_intersect_key($data->attributes, array_flip($config['mutable']));
+        $attributes = $this->normalizeAttributes($resource, $attributes);
         $addressWasSubmitted = array_key_exists('address', $attributes);
         $addressPayload = $attributes['address'] ?? null;
         unset($attributes['address']);
@@ -117,15 +118,15 @@ final class AdministrationUpdateService
         }
 
         $fromStatus = (string) ($resource->getAttribute('status') ?? '');
-        $toStatus = (string) $attributes['status'];
+        $toStatus = $attributes['status'];
 
-        if ($fromStatus === $toStatus) {
+        if ($fromStatus === (string) $toStatus) {
             return;
         }
 
         $action = match ($toStatus) {
-            'active' => LifecycleAction::ACTIVATE,
-            'inactive' => LifecycleAction::DEACTIVATE,
+            'active', 1, '1' => LifecycleAction::ACTIVATE,
+            'inactive', 0, '0' => LifecycleAction::DEACTIVATE,
             default => null,
         };
 
@@ -139,11 +140,27 @@ final class AdministrationUpdateService
     /**
      * @param  array<string, mixed>  $attributes
      */
+    private function normalizeAttributes(Model $resource, array $attributes): array
+    {
+        if (! $resource instanceof School || ! array_key_exists('status', $attributes)) {
+            return $attributes;
+        }
+
+        $attributes['status'] = in_array($attributes['status'], ['active', 1, '1'], true)
+            ? School::STATUS_ACTIVE
+            : School::STATUS_INACTIVE;
+
+        return $attributes;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
     private function recordSchoolUpdateAudit(School $school, User $actor, array $attributes, string $fromStatus, ?string $sourceIp): void
     {
         $eventType = 'school_updated';
         if (array_key_exists('status', $attributes) && (string) $attributes['status'] !== $fromStatus) {
-            $eventType = $attributes['status'] === 'active' ? 'school_activated' : 'school_deactivated';
+            $eventType = (int) $attributes['status'] === School::STATUS_ACTIVE ? 'school_activated' : 'school_deactivated';
         }
 
         $this->audit->record(new AuditEventData(

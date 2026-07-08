@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\PlatformSupport;
 
 use App\Models\ReportRun;
+use App\Models\School;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -35,7 +36,8 @@ final readonly class PlatformReportingOverviewService
         }
 
         if (isset($filters['school_status'])) {
-            $baseQuery->whereHas('school', fn ($query) => $query->where('status', $filters['school_status']));
+            $status = $filters['school_status'] === 'active' ? School::STATUS_ACTIVE : School::STATUS_INACTIVE;
+            $baseQuery->whereHas('school', fn ($query) => $query->where('status', $status));
         }
 
         if (($filters['report_source'] ?? null) === 'built_in') {

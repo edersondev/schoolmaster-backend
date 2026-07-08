@@ -88,7 +88,7 @@ final class AdministrationLifecycleService
                 $data->effectiveAt,
                 $data->reason,
                 $fromStatus === null ? null : (string) $fromStatus,
-                $toStatus,
+                (string) $toStatus,
             );
 
             return new AdministrationLifecycleResult(

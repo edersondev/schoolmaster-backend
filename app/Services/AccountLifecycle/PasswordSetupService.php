@@ -52,7 +52,7 @@ final class PasswordSetupService
                 throw new ConflictException('Account is not eligible for password setup.');
             }
 
-            if ($user->school !== null && $user->school->status !== 'active') {
+            if ($user->school !== null && ! $user->school->isActive()) {
                 throw new ConflictException('Inactive schools cannot complete account setup.');
             }
 

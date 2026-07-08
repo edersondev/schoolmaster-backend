@@ -48,11 +48,15 @@ final class School extends Model
     /** @use HasFactory<SchoolFactory> */
     use HasFactory, SoftDeletes;
 
+    public const STATUS_INACTIVE = 0;
+
+    public const STATUS_ACTIVE = 1;
+
     protected static function booted(): void
     {
         self::creating(function (School $school): void {
             $school->uuid ??= (string) Str::uuid();
-            $school->status ??= 'active';
+            $school->status ??= self::STATUS_ACTIVE;
             $school->timezone ??= 'America/Sao_Paulo';
             $school->language ??= 'pt-BR';
             $school->primary_color ??= '#1D4ED8';
@@ -75,7 +79,13 @@ final class School extends Model
             'pedagogical_approach_id' => 'integer',
             'education_level_ids' => 'array',
             'modality_ids' => 'array',
+            'status' => 'integer',
         ];
+    }
+
+    public function isActive(): bool
+    {
+        return (int) $this->status === self::STATUS_ACTIVE;
     }
 
     public function users(): HasMany

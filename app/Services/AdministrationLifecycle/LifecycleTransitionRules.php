@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\AdministrationLifecycle;
 
 use App\Exceptions\ConflictException;
+use App\Models\School;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -14,7 +15,7 @@ final class LifecycleTransitionRules
     {
         $usesSoftDeletes = in_array(SoftDeletes::class, class_uses_recursive($resource), true);
         $isDeleted = $usesSoftDeletes && method_exists($resource, 'trashed') && $resource->trashed();
-        $status = (string) ($resource->getAttribute('status') ?? 'active');
+        $status = $this->statusName($resource);
 
         if ($action === LifecycleAction::RESTORE) {
             if (! $isDeleted) {
@@ -37,14 +38,23 @@ final class LifecycleTransitionRules
         }
     }
 
-    public function statusAfter(Model $resource, string $action): ?string
+    public function statusAfter(Model $resource, string $action): string|int|null
     {
         return match ($action) {
-            LifecycleAction::ACTIVATE => 'active',
-            LifecycleAction::DEACTIVATE => 'inactive',
-            LifecycleAction::DELETE => (string) ($resource->getAttribute('status') ?? 'active'),
-            LifecycleAction::RESTORE => (string) ($resource->getAttribute('status') ?? 'active'),
+            LifecycleAction::ACTIVATE => $resource instanceof School ? School::STATUS_ACTIVE : 'active',
+            LifecycleAction::DEACTIVATE => $resource instanceof School ? School::STATUS_INACTIVE : 'inactive',
+            LifecycleAction::DELETE => $resource->getAttribute('status') ?? ($resource instanceof School ? School::STATUS_ACTIVE : 'active'),
+            LifecycleAction::RESTORE => $resource->getAttribute('status') ?? ($resource instanceof School ? School::STATUS_ACTIVE : 'active'),
             default => null,
         };
+    }
+
+    private function statusName(Model $resource): string
+    {
+        if ($resource instanceof School) {
+            return $resource->isActive() ? 'active' : 'inactive';
+        }
+
+        return (string) ($resource->getAttribute('status') ?? 'active');
     }
 }

@@ -28,7 +28,7 @@ final class SchoolContextGuardTest extends TestCase
 
     public function test_require_resolved_rejects_inactive_school_context(): void
     {
-        $school = School::factory()->create(['status' => 'inactive']);
+        $school = School::factory()->create(['status' => School::STATUS_INACTIVE]);
         $guard = new SchoolContextGuard;
         $context = new TenantContext($school, 'header', 'resolved');
 

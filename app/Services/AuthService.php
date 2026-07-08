@@ -45,7 +45,7 @@ final class AuthService
             || $user->status !== 'active'
             || (array_key_exists('school_id', $credentials) && $credentials['school_id'] !== null && $school === null)
             || ($school !== null && $user->school_id !== $school->id)
-            || ($user->school !== null && $user->school->status !== 'active')
+            || ($user->school !== null && ! $user->school->isActive())
             || $this->accountLifecycle->activeAdministrativeLock($user) !== null
         ) {
             $this->attempts->recordFailure($email, $ip);

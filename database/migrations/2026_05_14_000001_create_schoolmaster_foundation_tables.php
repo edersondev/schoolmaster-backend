@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('name');
             $table->string('cnpj', 14)->unique();
-            $table->string('status')->default('active')->index();
+            $table->unsignedTinyInteger('status')->default(1)->index();
             $table->string('contact_email')->nullable();
             $table->string('contact_phone')->nullable();
             $table->string('address_summary')->nullable();

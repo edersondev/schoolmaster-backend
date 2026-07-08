@@ -20,7 +20,7 @@ final class AccountLifecyclePolicy
                 && $actor->hasPermission('account_lifecycle.manage', 'platform');
         }
 
-        if ($scope !== 'school' || $school === null || $school->status !== 'active') {
+        if ($scope !== 'school' || $school === null || ! $school->isActive()) {
             return false;
         }
 

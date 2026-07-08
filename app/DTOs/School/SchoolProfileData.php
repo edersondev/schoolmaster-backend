@@ -78,7 +78,7 @@ final readonly class SchoolProfileData
     {
         $attributes = [
             'inep_code' => $this->inepCode,
-            'status' => $this->status === null ? null : ($this->status === 1 ? 'active' : 'inactive'),
+            'status' => $this->status,
             'name' => $this->name,
             'trade_name' => $this->tradeName,
             'legal_name' => $this->legalName,

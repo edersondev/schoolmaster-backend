@@ -33,7 +33,7 @@ final readonly class PlatformSchoolSummaryService
         $query = School::query();
 
         if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->where('status', $this->statusFilterValue($filters['status']));
         }
 
         foreach ($this->resolveSorts($filters['sort'] ?? 'name') as [$sortField, $sortDirection]) {
@@ -53,6 +53,11 @@ final readonly class PlatformSchoolSummaryService
         );
 
         return $paginator;
+    }
+
+    private function statusFilterValue(string $status): int
+    {
+        return $status === 'active' ? School::STATUS_ACTIVE : School::STATUS_INACTIVE;
     }
 
     /**

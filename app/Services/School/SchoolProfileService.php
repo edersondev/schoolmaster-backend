@@ -63,10 +63,9 @@ final class SchoolProfileService
             return;
         }
 
-        $current = $school->status;
-        $target = $status === 1 ? 'active' : 'inactive';
+        $current = (int) $school->status;
 
-        if ($current === $target || (string) $current === (string) $status) {
+        if ($current === $status) {
             return;
         }
 

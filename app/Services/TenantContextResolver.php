@@ -17,7 +17,7 @@ final class TenantContextResolver
         $headerSchoolId = $request->header('X-School-Id');
 
         if ($user->school !== null) {
-            if ($user->school->status !== 'active') {
+            if (! $user->school->isActive()) {
                 throw new TenantContextException('Tenant context is inactive.');
             }
 
@@ -38,7 +38,7 @@ final class TenantContextResolver
 
         $school = School::query()->where('uuid', $headerSchoolId)->first();
 
-        if ($school === null || $school->status !== 'active') {
+        if ($school === null || ! $school->isActive()) {
             throw new TenantContextException('Tenant context is missing, inactive, or outside permitted scope.');
         }
 

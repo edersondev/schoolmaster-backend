@@ -21,7 +21,7 @@ final class SchoolFactory extends Factory
         return [
             'name' => fake()->company().' School',
             'cnpj' => self::validCnpj(self::$cnpjSequence++),
-            'status' => 'active',
+            'status' => School::STATUS_ACTIVE,
             'contact_email' => fake()->safeEmail(),
             'contact_phone' => fake()->phoneNumber(),
         ];
@@ -29,7 +29,7 @@ final class SchoolFactory extends Factory
 
     public function inactive(): static
     {
-        return $this->state(fn () => ['status' => 'inactive']);
+        return $this->state(fn () => ['status' => School::STATUS_INACTIVE]);
     }
 
     private static function validCnpj(int $sequence): string

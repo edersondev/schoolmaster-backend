@@ -28,7 +28,7 @@ final class SchoolUpdateRequest extends SchoolCreateRequest
         $rules['inep_code'] = ['sometimes', 'string', 'size:8', 'regex:/^[0-9]{8}$/', Rule::unique('schools', 'inep_code')->ignore($school?->id)];
         $rules['status'] = ['sometimes', 'integer', Rule::in([1, 0])];
         $rules['name'] = ['sometimes', 'string', 'max:255'];
-        $rules['email'] = ['sometimes', 'email', 'max:255', Rule::unique('schools', 'normalized_email')->ignore($school?->id)];
+        $rules['email'] = ['sometimes', 'email', 'max:100', Rule::unique('schools', 'normalized_email')->ignore($school?->id)];
 
         return $rules;
     }

@@ -42,7 +42,7 @@ final class AccountReactivationTest extends TestCase
 
     public function test_reactivation_rejects_inactive_school_dependency(): void
     {
-        $school = School::factory()->create(['status' => 'inactive']);
+        $school = School::factory()->create(['status' => School::STATUS_INACTIVE]);
         $admin = $this->createSchoolAdmin($school, ['account_lifecycle.manage']);
         $token = $this->bearerTokenFor($admin);
         $target = User::factory()->create([

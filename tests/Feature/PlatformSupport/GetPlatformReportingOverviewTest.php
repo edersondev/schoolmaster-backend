@@ -53,8 +53,8 @@ final class GetPlatformReportingOverviewTest extends TestCase
 
     public function test_reporting_overview_applies_school_status_and_report_source_filters(): void
     {
-        $activeSchool = School::factory()->create(['status' => 'active']);
-        $inactiveSchool = School::factory()->create(['status' => 'inactive']);
+        $activeSchool = School::factory()->create(['status' => School::STATUS_ACTIVE]);
+        $inactiveSchool = School::factory()->create(['status' => School::STATUS_INACTIVE]);
         $activeRequester = $this->createSchoolAdmin($activeSchool, ['reports.request']);
         $inactiveRequester = $this->createSchoolAdmin($inactiveSchool, ['reports.request']);
         $customDefinition = ReportDefinition::factory()->create([

@@ -40,7 +40,7 @@ final class ClassroomRosterFoundationTest extends TestCase
         config(['app.timezone' => 'America/Sao_Paulo']);
         CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-05-30 00:30:00', 'America/Sao_Paulo'));
 
-        $school = (new School)->forceFill(['status' => 'active']);
+        $school = (new School)->forceFill(['status' => School::STATUS_ACTIVE]);
         $period = (new AcademicPeriod)->forceFill([
             'start_date' => '2026-05-01',
             'end_date' => '2026-05-30',
@@ -61,7 +61,7 @@ final class ClassroomRosterFoundationTest extends TestCase
     {
         $this->expectException(ValidationException::class);
 
-        $school = (new School)->forceFill(['status' => 'active', 'timezone' => 'UTC']);
+        $school = (new School)->forceFill(['status' => School::STATUS_ACTIVE, 'timezone' => 'UTC']);
         $period = (new AcademicPeriod)->forceFill([
             'start_date' => '2026-01-01',
             'end_date' => '2026-03-31',
@@ -173,7 +173,7 @@ final class ClassroomRosterFoundationTest extends TestCase
 
     private function context(): array
     {
-        $school = School::factory()->create(['status' => 'active']);
+        $school = School::factory()->create(['status' => School::STATUS_ACTIVE]);
         $actor = User::factory()->create(['school_id' => $school->id, 'status' => 'active']);
         $year = AcademicYear::query()->create([
             'school_id' => $school->id,

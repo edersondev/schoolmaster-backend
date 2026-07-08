@@ -49,7 +49,7 @@ final class SchoolCreateTest extends TestCase
             'document' => '56563930000108',
             'cnpj' => '56563930000108',
             'normalized_email' => 'profile@example.com',
-            'status' => 'active',
+            'status' => School::STATUS_ACTIVE,
         ]);
     }
 
@@ -74,7 +74,7 @@ final class SchoolCreateTest extends TestCase
             'status' => 'active',
         ]);
 
-        $this->assertSame('active', $school->status);
+        $this->assertSame(School::STATUS_ACTIVE, $school->status);
 
         $this->postJson('/api/v1/auth/login', [
             'email' => 'tenant-admin@example.com',
@@ -111,6 +111,29 @@ final class SchoolCreateTest extends TestCase
                 ->has('error.details.fields.status')
                 ->has('error.details.fields.address')
                 ->has('error.details.fields.administrative_type_id')
+                ->etc());
+    }
+
+    public function test_create_rejects_school_profile_field_lengths(): void
+    {
+        $token = $this->bearerTokenFor($this->createPlatformUser());
+
+        $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
+            'name' => str_repeat('A', 256),
+            'trade_name' => str_repeat('B', 256),
+            'legal_name' => str_repeat('C', 256),
+            'email' => str_repeat('d', 92).'@example.com',
+            'website' => 'https://'.str_repeat('e', 105).'.example.com',
+            'description' => str_repeat('F', 501),
+        ]))
+            ->assertUnprocessable()
+            ->assertJson(fn ($json) => $json
+                ->has('error.details.fields.name')
+                ->has('error.details.fields.trade_name')
+                ->has('error.details.fields.legal_name')
+                ->has('error.details.fields.email')
+                ->has('error.details.fields.website')
+                ->has('error.details.fields.description')
                 ->etc());
     }
 

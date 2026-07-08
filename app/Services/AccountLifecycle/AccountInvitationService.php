@@ -156,7 +156,7 @@ final class AccountInvitationService
 
         $school = $context->school;
 
-        if ($school === null || $school->status !== 'active') {
+        if ($school === null || ! $school->isActive()) {
             throw new TenantContextException('Tenant context is missing, inactive, or outside permitted scope.');
         }
 
@@ -164,7 +164,7 @@ final class AccountInvitationService
             throw new TenantContextException('Tenant context is missing, inactive, or outside permitted scope.');
         }
 
-        if ($school->status !== 'active') {
+        if (! $school->isActive()) {
             throw new InactiveRecordException('Inactive schools cannot be used for account invitations.');
         }
 
