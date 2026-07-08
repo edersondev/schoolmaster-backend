@@ -62,6 +62,7 @@ final class SchoolContractTest extends TestCase
                     'timezone',
                     'language',
                     'logo_path',
+                    'logo_url',
                     'primary_color',
                     'secondary_color',
                 ],

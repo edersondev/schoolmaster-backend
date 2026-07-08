@@ -168,6 +168,7 @@ final class SchoolUpdateTest extends TestCase
         ]))->assertOk()->json('data');
 
         $this->assertSame($originalLogo, $withoutLogo['logo_path']);
+        $this->assertStringEndsWith('/storage/'.$originalLogo, $withoutLogo['logo_url']);
         Storage::disk('public')->assertExists($originalLogo);
 
         $withReplacement = $this->withToken($token)->patch('/api/v1/schools/'.$created['id'], $this->validSchoolProfilePayload([
@@ -177,6 +178,7 @@ final class SchoolUpdateTest extends TestCase
         ]))->assertOk()->json('data');
 
         $this->assertNotSame($originalLogo, $withReplacement['logo_path']);
+        $this->assertStringEndsWith('/storage/'.$withReplacement['logo_path'], $withReplacement['logo_url']);
         Storage::disk('public')->assertMissing($originalLogo);
         Storage::disk('public')->assertExists($withReplacement['logo_path']);
     }

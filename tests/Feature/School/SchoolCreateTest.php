@@ -42,6 +42,8 @@ final class SchoolCreateTest extends TestCase
             ->json('data');
 
         $this->assertIsString($school['logo_path']);
+        $this->assertIsString($school['logo_url']);
+        $this->assertStringEndsWith('/storage/'.$school['logo_path'], $school['logo_url']);
         Storage::disk('public')->assertExists($school['logo_path']);
 
         $this->assertDatabaseHas('schools', [
@@ -92,7 +94,8 @@ final class SchoolCreateTest extends TestCase
         ]))
             ->assertCreated()
             ->assertJsonPath('data.name', 'No Logo School')
-            ->assertJsonPath('data.logo_path', null);
+            ->assertJsonPath('data.logo_path', null)
+            ->assertJsonPath('data.logo_url', null);
     }
 
     public function test_create_requires_address_institutional_fields_and_numeric_status(): void

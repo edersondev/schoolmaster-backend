@@ -6,6 +6,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 final class SchoolResource extends JsonResource
 {
@@ -33,6 +34,7 @@ final class SchoolResource extends JsonResource
             'timezone' => $this->timezone ?? 'America/Sao_Paulo',
             'language' => $this->language ?? 'pt-BR',
             'logo_path' => $this->logo_path,
+            'logo_url' => $this->logo_path ? Storage::disk('public')->url($this->logo_path) : null,
             'primary_color' => $this->primary_color ?? '#1D4ED8',
             'secondary_color' => $this->secondary_color ?? '#F59E0B',
         ];
