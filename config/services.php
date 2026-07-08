@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'viacep' => [
+        'base_url' => env('VIACEP_BASE_URL', 'https://viacep.com.br'),
+        'timeout_seconds' => (int) env('VIACEP_TIMEOUT_SECONDS', 3),
+        'cache_ttl_seconds' => (int) env('VIACEP_CACHE_TTL_SECONDS', 86400),
+    ],
+
 ];

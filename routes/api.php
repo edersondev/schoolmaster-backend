@@ -6,7 +6,9 @@ use App\Http\Controllers\Api\V1\AcademicRecordImportController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
 use App\Http\Controllers\Api\V1\AccountInvitationController;
 use App\Http\Controllers\Api\V1\AccountRecoveryController;
+use App\Http\Controllers\Api\V1\AddressLookupController;
 use App\Http\Controllers\Api\V1\AdministrationLifecycleController;
+use App\Http\Controllers\Api\V1\Assessment\AssessmentController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BulkAdministrationLifecycleController;
@@ -17,7 +19,6 @@ use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearningSetController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PermissionController;
-use App\Http\Controllers\Api\V1\Assessment\AssessmentController;
 use App\Http\Controllers\Api\V1\Platform\PlatformSupportController;
 use App\Http\Controllers\Api\V1\QuestionnaireController;
 use App\Http\Controllers\Api\V1\ReportController;
@@ -27,8 +28,8 @@ use App\Http\Controllers\Api\V1\RosterMembershipController;
 use App\Http\Controllers\Api\V1\SchoolController;
 use App\Http\Controllers\Api\V1\SchoolLifecycleController;
 use App\Http\Controllers\Api\V1\SchoolLookupController;
-use App\Http\Controllers\Api\V1\StudentAttendanceController;
 use App\Http\Controllers\Api\V1\Student\StudentAssessmentController;
+use App\Http\Controllers\Api\V1\StudentAttendanceController;
 use App\Http\Controllers\Api\V1\StudentGradeController;
 use App\Http\Controllers\Api\V1\StudentLearningSetController;
 use App\Http\Controllers\Api\V1\StudentProfileController;
@@ -57,6 +58,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/users/{userId}/account-lock', [AccountRecoveryController::class, 'lock'])->whereUuid('userId')->name('api.v1.users.account-lock.store');
         Route::delete('/users/{userId}/account-lock', [AccountRecoveryController::class, 'unlock'])->whereUuid('userId')->name('api.v1.users.account-lock.destroy');
         Route::post('/users/{userId}/account-reactivation', [AccountRecoveryController::class, 'recover'])->whereUuid('userId')->name('api.v1.users.account-reactivation.store');
+        Route::get('/address-lookups/{zipCode}', AddressLookupController::class)
+            ->name('api.v1.address-lookups.show');
 
         Route::get('/schools', [SchoolController::class, 'index'])->name('api.v1.schools.index');
         Route::post('/schools', [SchoolController::class, 'store'])->name('api.v1.schools.store');
