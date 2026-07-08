@@ -14,12 +14,12 @@ final class AddressResource extends JsonResource
         return [
             'id' => $this->id,
             'street' => $this->street,
-            'number' => $this->number,
+            'number' => (string) $this->number,
             'complement' => $this->complement,
             'neighborhood' => $this->neighborhood,
             'city' => $this->city,
             'state' => $this->state,
-            'zip_code' => $this->zip_code,
+            'zip_code' => (string) $this->zip_code,
             'country' => $this->country,
         ];
     }

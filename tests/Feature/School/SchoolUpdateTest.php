@@ -138,15 +138,18 @@ final class SchoolUpdateTest extends TestCase
             'inep_code' => $first['inep_code'],
             'email' => 'FIRST@example.com',
         ]);
+        $payload['address']['complement'] = str_repeat('A', 256);
         unset($payload['address']['number']);
 
-        $this->withToken($token)->patchJson('/api/v1/schools/'.$second['id'], $payload)
-            ->assertUnprocessable()
+        $response = $this->withToken($token)->patchJson('/api/v1/schools/'.$second['id'], $payload);
+
+        $response->assertUnprocessable()
             ->assertJson(fn ($json) => $json
                 ->has('error.details.fields.inep_code')
                 ->has('error.details.fields.email')
                 ->has('error.details.fields.address')
                 ->etc());
+        $this->assertArrayHasKey('address.complement', $response->json('error.details.fields'));
     }
 
     public function test_update_preserves_logo_without_new_file_and_replaces_old_logo_after_success(): void

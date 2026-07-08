@@ -121,15 +121,19 @@ final class SchoolCreateTest extends TestCase
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
 
-        $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
+        $response = $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => str_repeat('A', 256),
             'trade_name' => str_repeat('B', 256),
             'legal_name' => str_repeat('C', 256),
             'email' => str_repeat('d', 92).'@example.com',
             'website' => 'https://'.str_repeat('e', 105).'.example.com',
             'description' => str_repeat('F', 501),
-        ]))
-            ->assertUnprocessable()
+            'address' => array_merge($this->validSchoolProfilePayload()['address'], [
+                'complement' => str_repeat('G', 256),
+            ]),
+        ]));
+
+        $response->assertUnprocessable()
             ->assertJson(fn ($json) => $json
                 ->has('error.details.fields.name')
                 ->has('error.details.fields.trade_name')
@@ -138,6 +142,7 @@ final class SchoolCreateTest extends TestCase
                 ->has('error.details.fields.website')
                 ->has('error.details.fields.description')
                 ->etc());
+        $this->assertArrayHasKey('address.complement', $response->json('error.details.fields'));
     }
 
     public function test_create_rejects_invalid_check_digits_and_duplicate_soft_deleted_identity_fields(): void

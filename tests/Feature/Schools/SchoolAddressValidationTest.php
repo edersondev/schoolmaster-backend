@@ -17,7 +17,7 @@ final class SchoolAddressValidationTest extends TestCase
     {
         $token = $this->bearerTokenFor($this->createPlatformUser());
 
-        $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
+        $response = $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
             'name' => 'North School',
             'document' => '04.252.011/0001-10',
             'email' => 'north-address@example.com',
@@ -25,12 +25,16 @@ final class SchoolAddressValidationTest extends TestCase
                 'country' => null,
                 'complement' => 'Block B',
             ]),
-        ]))
-            ->assertCreated()
+        ]));
+
+        $response->assertCreated()
             ->assertJsonPath('data.address.street', 'Main Street')
             ->assertJsonPath('data.address.number', '123')
             ->assertJsonPath('data.address.complement', 'Block B')
             ->assertJsonPath('data.address.country', null);
+
+        $this->assertSame('123', $response->json('data.address.number'));
+        $this->assertSame('12345678', $response->json('data.address.zip_code'));
 
         $school = School::query()->where('document', '04252011000110')->firstOrFail();
 
@@ -39,7 +43,7 @@ final class SchoolAddressValidationTest extends TestCase
             'addressable_type' => School::class,
             'addressable_id' => $school->id,
             'street' => 'Main Street',
-            'number' => '123',
+            'number' => 123,
             'zip_code' => '12345678',
         ]);
     }
@@ -72,6 +76,30 @@ final class SchoolAddressValidationTest extends TestCase
         $this->assertArrayHasKey('address.number', $fields);
         $this->assertArrayHasKey('address.neighborhood', $fields);
         $this->assertArrayHasKey('address.city', $fields);
+        $this->assertArrayHasKey('address.state', $fields);
+        $this->assertArrayHasKey('address.zip_code', $fields);
+    }
+
+    public function test_school_address_validation_rejects_values_that_exceed_storage_limits(): void
+    {
+        $token = $this->bearerTokenFor($this->createPlatformUser());
+
+        $response = $this->withToken($token)->postJson('/api/v1/schools', $this->validSchoolProfilePayload([
+            'name' => 'Oversized Address School',
+            'address' => $this->validAddressPayload([
+                'number' => '4294967296',
+                'state' => 'ABCDE',
+                'zip_code' => '1234567890123',
+            ]),
+        ]));
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $fields = $response->json('error.details.fields');
+
+        $this->assertArrayHasKey('address.number', $fields);
         $this->assertArrayHasKey('address.state', $fields);
         $this->assertArrayHasKey('address.zip_code', $fields);
     }

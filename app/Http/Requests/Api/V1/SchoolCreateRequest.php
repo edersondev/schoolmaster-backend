@@ -7,6 +7,7 @@ namespace App\Http\Requests\Api\V1;
 use App\Http\Requests\ApiFormRequest;
 use App\Models\SchoolInstitutionalLookup;
 use App\Rules\Cnpj;
+use Closure;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Exists;
 
@@ -58,12 +59,22 @@ class SchoolCreateRequest extends ApiFormRequest
         return [
             'address' => ['required', 'array:street,number,complement,neighborhood,city,state,zip_code,country', 'required_array_keys:street,number,neighborhood,city,state,zip_code'],
             'address.street' => ['required', 'string', 'max:255'],
-            'address.number' => ['required', 'string', 'regex:/^[0-9]+$/', 'max:32'],
+            'address.number' => [
+                'required',
+                'string',
+                'regex:/^[0-9]+$/',
+                'max_digits:10',
+                function (string $attribute, mixed $value, Closure $fail): void {
+                    if ((int) $value > 4294967295) {
+                        $fail('The address number must fit an unsigned integer.');
+                    }
+                },
+            ],
             'address.complement' => ['nullable', 'string', 'max:255'],
             'address.neighborhood' => ['required', 'string', 'max:255'],
             'address.city' => ['required', 'string', 'max:255'],
-            'address.state' => ['required', 'string', 'max:255'],
-            'address.zip_code' => ['required', 'string', 'regex:/^[0-9]+$/', 'max:32'],
+            'address.state' => ['required', 'string', 'max:4'],
+            'address.zip_code' => ['required', 'string', 'regex:/^[0-9]+$/', 'max:12'],
             'address.country' => ['nullable', 'string', 'max:255'],
         ];
     }
