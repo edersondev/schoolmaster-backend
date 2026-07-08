@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Addresses;
 
+use App\Models\Address;
 use App\Models\School;
 use App\Services\Addresses\SchoolAddressService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,6 +30,8 @@ final class SchoolAddressServiceTest extends TestCase
             ],
         ]);
 
+        $firstAddressId = $school->refresh()->address->id;
+
         $service->applySubmittedAddress($school, [
             'address' => [
                 'street' => 'Second Street',
@@ -43,6 +46,12 @@ final class SchoolAddressServiceTest extends TestCase
         ]);
 
         $this->assertSame(1, $school->address()->count());
+        $this->assertSame(1, Address::withTrashed()
+            ->where('school_id', $school->id)
+            ->where('addressable_type', School::class)
+            ->where('addressable_id', $school->id)
+            ->count());
+        $this->assertSame($firstAddressId, $school->refresh()->address->id);
         $this->assertDatabaseHas('addresses', [
             'school_id' => $school->id,
             'addressable_type' => School::class,
@@ -50,6 +59,7 @@ final class SchoolAddressServiceTest extends TestCase
             'street' => 'Second Street',
             'number' => '200',
             'zip_code' => '20000000',
+            'deleted_at' => null,
         ]);
     }
 

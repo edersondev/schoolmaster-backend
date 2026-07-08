@@ -18,15 +18,29 @@ final class SchoolAddressService
         $this->owners->assertApproved($school);
 
         return DB::transaction(function () use ($school, $data): Address {
-            $school->address()->delete();
-
-            /** @var Address $address */
-            $address = $school->address()->create([
+            $address = $this->existingAddressFor($school);
+            $attributes = [
                 ...$data->toArray(),
                 'school_id' => $school->id,
-            ]);
+                'addressable_type' => School::class,
+                'addressable_id' => $school->id,
+            ];
 
-            return $address;
+            if ($address === null) {
+                /** @var Address $address */
+                $address = $school->address()->create($attributes);
+
+                return $address;
+            }
+
+            if ($address->trashed()) {
+                $address->restore();
+            }
+
+            $address->fill($attributes);
+            $address->save();
+
+            return $address->refresh();
         });
     }
 
@@ -50,5 +64,20 @@ final class SchoolAddressService
         }
 
         $this->createOrReplace($school, AddressData::fromArray($payload['address']));
+    }
+
+    private function existingAddressFor(School $school): ?Address
+    {
+        /** @var Address|null $address */
+        $address = Address::query()
+            ->withTrashed()
+            ->where('school_id', $school->id)
+            ->where('addressable_type', School::class)
+            ->where('addressable_id', $school->id)
+            ->orderBy('deleted_at')
+            ->latest('updated_at')
+            ->first();
+
+        return $address;
     }
 }

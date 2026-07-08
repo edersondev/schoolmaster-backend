@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Schools;
 
+use App\Models\Address;
 use App\Models\School;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -119,6 +120,7 @@ final class SchoolAddressValidationTest extends TestCase
             'number' => '321',
             'deleted_at' => null,
         ]);
+        $firstAddressId = $school->refresh()->address->id;
 
         $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, $this->validSchoolProfilePayload([
             'document' => $school->document,
@@ -128,6 +130,12 @@ final class SchoolAddressValidationTest extends TestCase
             ->assertJsonPath('data.address.number', '654');
 
         $this->assertSame(1, $school->address()->count());
+        $this->assertSame(1, Address::withTrashed()
+            ->where('school_id', $school->id)
+            ->where('addressable_type', School::class)
+            ->where('addressable_id', $school->id)
+            ->count());
+        $this->assertSame($firstAddressId, $school->refresh()->address->id);
 
         $this->withToken($token)->patchJson('/api/v1/schools/'.$school->uuid, [
             'address' => null,
