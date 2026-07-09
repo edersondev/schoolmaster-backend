@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\DTOs\AuditEventData;
+use App\DTOs\School\SchoolListFilters;
 use App\DTOs\School\SchoolProfileData;
 use App\Models\School;
 use App\Models\User;
+use App\Services\School\SchoolListFilterService;
 use App\Services\School\SchoolProfileService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 
 final class SchoolService
@@ -18,18 +21,21 @@ final class SchoolService
     public function __construct(
         private readonly AuditEventService $audit,
         private readonly SchoolProfileService $profiles,
+        private readonly SchoolListFilterService $listFilters,
     ) {}
 
     public function list(User $actor, array $filters): LengthAwarePaginator
     {
         $this->assertPlatformPermission($actor, 'schools.view');
 
-        return School::query()
-            ->with('address')
-            ->when(array_key_exists('status', $filters), fn ($query) => $query->where('status', (int) $filters['status']))
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate((int) ($filters['per_page'] ?? 15));
+        $query = $this->listFilters->apply(
+            School::query()->with('address'),
+            SchoolListFilters::fromArray($filters),
+        );
+
+        $this->applySorting($query, $filters['sort'] ?? null);
+
+        return $query->paginate((int) ($filters['per_page'] ?? 15));
     }
 
     public function create(User $actor, array $data, ?string $sourceIp = null, ?UploadedFile $logoFile = null): School
@@ -83,6 +89,25 @@ final class SchoolService
         ));
 
         return $school;
+    }
+
+    /**
+     * @param  Builder<School>  $query
+     */
+    private function applySorting(Builder $query, mixed $sort): void
+    {
+        if (! is_string($sort) || $sort === '') {
+            $query->orderByDesc('created_at')->orderByDesc('id');
+
+            return;
+        }
+
+        foreach (explode(',', $sort) as $field) {
+            $direction = str_starts_with($field, '-') ? 'desc' : 'asc';
+            $query->orderBy(ltrim($field, '-'), $direction);
+        }
+
+        $query->orderByDesc('id');
     }
 
     private function assertPlatformPermission(User $actor, string $permission): void
