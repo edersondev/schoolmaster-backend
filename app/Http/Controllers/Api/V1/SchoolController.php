@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\SchoolCreateRequest;
+use App\Http\Requests\Api\V1\SchoolListRequest;
 use App\Http\Requests\Api\V1\SchoolUpdateRequest;
 use App\Http\Resources\ApiResponse;
 use App\Http\Resources\SchoolResource;
@@ -17,9 +18,9 @@ final class SchoolController extends Controller
 {
     public function __construct(private readonly SchoolService $schools) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(SchoolListRequest $request): JsonResponse
     {
-        $paginator = $this->schools->list($request->attributes->get('auth_user'), $request->query());
+        $paginator = $this->schools->list($request->attributes->get('auth_user'), $request->validated());
 
         return ApiResponse::paginated($paginator, SchoolResource::collection($paginator->items())->resolve());
     }
