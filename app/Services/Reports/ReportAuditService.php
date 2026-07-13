@@ -22,6 +22,12 @@ final class ReportAuditService
         ?ReportRun $reportRun = null,
         ?ReportDefinition $reportDefinition = null,
     ): ReportLifecycleEvent {
+        unset($summary['master_access_used']);
+
+        if ($context->actor->isSystemAdministrator() && ! in_array($action, ['downloaded', 'output_expired'], true)) {
+            $summary['master_access_used'] = true;
+        }
+
         return ReportLifecycleEvent::query()->create([
             'school_id' => $context->school->id,
             'actor_user_id' => $context->actor->id,

@@ -107,6 +107,10 @@ class User extends Authenticatable
 
     public function hasPermission(string $code, string $scope): bool
     {
+        if ($this->isSystemAdministrator()) {
+            return true;
+        }
+
         return $this->roles()
             ->where('roles.status', 'active')
             ->where('roles.scope', $scope)
@@ -116,6 +120,10 @@ class User extends Authenticatable
 
     public function hasSchoolPermission(string $code, int $schoolId): bool
     {
+        if ($this->isSystemAdministrator()) {
+            return true;
+        }
+
         return $this->roles()
             ->where('roles.status', 'active')
             ->where('roles.scope', 'school')
@@ -125,6 +133,20 @@ class User extends Authenticatable
                 ->where('scope', 'school')
                 ->where('permissions.status', 'active'))
             ->exists();
+    }
+
+    public function isSystemAdministrator(): bool
+    {
+        if (! $this->isActive() || ! $this->isPlatformUser()) {
+            return false;
+        }
+
+        return $this->roles()
+            ->where('roles.status', 'active')
+            ->where('roles.scope', 'platform')
+            ->whereNull('roles.school_id')
+            ->pluck('roles.name')
+            ->contains(static fn (string $name): bool => $name === 'System Administrator');
     }
 
     public function isPlatformUser(): bool

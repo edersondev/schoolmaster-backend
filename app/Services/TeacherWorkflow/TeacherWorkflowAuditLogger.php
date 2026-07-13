@@ -6,6 +6,7 @@ namespace App\Services\TeacherWorkflow;
 
 use App\DTOs\AuditEventData;
 use App\Models\AuditEvent;
+use App\Models\User;
 use App\Services\AuditEventService;
 
 final class TeacherWorkflowAuditLogger
@@ -26,6 +27,10 @@ final class TeacherWorkflowAuditLogger
         ?string $targetId = null,
         array $metadata = [],
     ): AuditEvent {
+        $masterAccessUsed = $actorUserId !== null
+            && $eventType !== 'teacher_workflow.download'
+            && User::query()->find($actorUserId)?->isSystemAdministrator() === true;
+
         return $this->auditEventService->record(new AuditEventData(
             eventType: $eventType,
             outcome: $outcome,
@@ -34,6 +39,7 @@ final class TeacherWorkflowAuditLogger
             affectedResourceType: $targetType,
             affectedResourceId: $targetId,
             metadata: $this->tenantSafeMetadata($metadata),
+            masterAccessUsed: $masterAccessUsed,
         ));
     }
 

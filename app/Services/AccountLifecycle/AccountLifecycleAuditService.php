@@ -26,6 +26,7 @@ final class AccountLifecycleAuditService
             affectedResourceId: $target?->uuid,
             sourceIp: $sourceIp,
             metadata: $metadata,
+            masterAccessUsed: $actor?->isSystemAdministrator() ?? false,
         ));
     }
 }

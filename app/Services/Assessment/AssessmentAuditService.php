@@ -20,6 +20,17 @@ final class AssessmentAuditService
         ?Model $target = null,
         array $metadata = [],
     ): AuditEvent {
+        $metadata = $this->redact($metadata + [
+            'authority' => $context->authority,
+            'correlation_id' => $context->correlationId,
+            'reason_code' => $reasonCode,
+        ]);
+        unset($metadata['master_access_used']);
+
+        if ($context->actor->isSystemAdministrator() && in_array($action, ['grading', 'submission', 'upload', 'file_scan'], true)) {
+            $metadata['master_access_used'] = true;
+        }
+
         return AuditEvent::query()->create([
             'event_type' => 'assessment.'.$action,
             'actor_user_id' => $context->actor->id,
@@ -27,11 +38,7 @@ final class AssessmentAuditService
             'affected_resource_type' => $target !== null ? $target::class : null,
             'affected_resource_id' => $target?->getAttribute('uuid'),
             'outcome' => $outcome,
-            'tenant_safe_metadata' => $this->redact($metadata + [
-                'authority' => $context->authority,
-                'correlation_id' => $context->correlationId,
-                'reason_code' => $reasonCode,
-            ]),
+            'tenant_safe_metadata' => $metadata,
             'occurred_at' => now(),
         ]);
     }

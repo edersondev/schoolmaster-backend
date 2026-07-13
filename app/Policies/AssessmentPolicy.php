@@ -41,7 +41,7 @@ final class AssessmentPolicy
 
     private function hasReviewAuthority(User $user, AssessmentResponseAttempt $attempt): bool
     {
-        if ($user->school_id !== $attempt->school_id) {
+        if (! $user->isSystemAdministrator() && $user->school_id !== $attempt->school_id) {
             return false;
         }
 

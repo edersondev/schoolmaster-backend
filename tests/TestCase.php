@@ -46,6 +46,32 @@ abstract class TestCase extends BaseTestCase
         return $user->refresh()->load('roles.permissions');
     }
 
+    protected function createSystemAdministrator(): User
+    {
+        $user = User::factory()->create([
+            'school_id' => null,
+            'email' => fake()->unique()->safeEmail(),
+            'password' => Hash::make('password'),
+            'status' => 'active',
+        ]);
+
+        $role = Role::query()->create([
+            'school_id' => null,
+            'scope' => 'platform',
+            'name' => 'System Administrator',
+            'status' => 'active',
+        ]);
+
+        $user->roles()->attach($role);
+
+        return $user->refresh()->load('roles.permissions');
+    }
+
+    protected function createLimitedPlatformUser(): User
+    {
+        return $this->createPlatformUser([]);
+    }
+
     protected function createSchoolAdmin(School $school, array $permissions = [
         'users.view',
         'users.manage',

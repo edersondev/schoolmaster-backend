@@ -31,7 +31,7 @@ final class LearningSetPolicy
 
     private function canManage(User $user, LearningSet $learningSet): bool
     {
-        if ($user->school_id !== $learningSet->school_id) {
+        if (! $user->isSystemAdministrator() && $user->school_id !== $learningSet->school_id) {
             return false;
         }
 

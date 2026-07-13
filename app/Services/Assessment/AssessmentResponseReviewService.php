@@ -26,7 +26,7 @@ final class AssessmentResponseReviewService
         $context = $this->tenantScope->actorContext($actor, $tenantContext);
 
         if (
-            $actor->school_id !== $context->school->id
+            (! $actor->isSystemAdministrator() && $actor->school_id !== $context->school->id)
             || (! $actor->hasSchoolPermission('users.manage', $context->school->id)
                 && ! $actor->hasSchoolPermission('questionnaires.manage', $context->school->id))
         ) {

@@ -21,7 +21,7 @@ final class AssessmentReviewAuthorizationService
     {
         $attempt->loadMissing('academicPeriod', 'questionnaire');
 
-        if (! $actor->isActive() || $actor->school_id !== $attempt->school_id) {
+        if (! $actor->isActive() || (! $actor->isSystemAdministrator() && $actor->school_id !== $attempt->school_id)) {
             return false;
         }
 

@@ -18,5 +18,6 @@ final readonly class AuditEventData
         public ?string $affectedResourceId = null,
         public ?string $sourceIp = null,
         public array $metadata = [],
+        public bool $masterAccessUsed = false,
     ) {}
 }

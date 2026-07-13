@@ -15,7 +15,7 @@ final class TeacherWorkflowPolicy
         string $ownerPermission,
         string $administratorPermission = 'users.manage',
     ): bool {
-        if ($actor->school_id !== $schoolId) {
+        if (! $actor->isSystemAdministrator() && $actor->school_id !== $schoolId) {
             return false;
         }
 
@@ -28,6 +28,6 @@ final class TeacherWorkflowPolicy
 
     public function deniesCrossTenant(User $actor, int $schoolId): bool
     {
-        return $actor->school_id !== $schoolId;
+        return ! $actor->isSystemAdministrator() && $actor->school_id !== $schoolId;
     }
 }
