@@ -10,9 +10,17 @@ final class MasterAccessContractDocumentationTest extends TestCase
 {
     public function test_contract_defines_canonical_marker_and_non_permission_prerequisites(): void
     {
-        $contract = file_get_contents(base_path('specs/specs/031-system-admin-master/contracts/system-admin-master-contract.md'));
-        $security = file_get_contents(base_path('specs/docs/security.md'));
-        $openApi = file_get_contents(base_path('specs/api/openapi.yaml'));
+        $contractPath = base_path('specs/specs/031-system-admin-master/contracts/system-admin-master-contract.md');
+        $securityPath = base_path('specs/docs/security.md');
+        $openApiPath = base_path('specs/api/openapi.yaml');
+
+        if (! is_file($contractPath) || ! is_file($securityPath) || ! is_file($openApiPath)) {
+            $this->markTestSkipped('The external specifications checkout is unavailable.');
+        }
+
+        $contract = file_get_contents($contractPath);
+        $security = file_get_contents($securityPath);
+        $openApi = file_get_contents($openApiPath);
 
         $this->assertIsString($contract);
         $this->assertStringContainsString('`master_access_used: true`', $contract);
