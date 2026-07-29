@@ -48,7 +48,7 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/auth/password-resets', [PasswordResetController::class, 'complete'])->name('api.v1.auth.password-resets');
     Route::post('/account-invitations/{invitationToken}/setup', [AccountInvitationController::class, 'complete'])->name('api.v1.account-invitations.setup');
 
-    Route::middleware('schoolmaster.auth')->group(function (): void {
+    Route::middleware(['schoolmaster.auth', 'schoolmaster.master_access_audit'])->group(function (): void {
         Route::get('/auth/me', [AuthController::class, 'me'])->name('api.v1.auth.me');
         Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.v1.auth.logout');
 

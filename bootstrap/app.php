@@ -8,6 +8,7 @@ use App\Exceptions\PermissionDeniedException;
 use App\Exceptions\TenantContextException;
 use App\Exceptions\TokenRejectedException;
 use App\Http\Middleware\AuthenticateBearerToken;
+use App\Http\Middleware\RecordMasterAccessMutation;
 use App\Http\Middleware\ResolveSchoolContext;
 use App\Http\Resources\ApiResponse;
 use App\Services\Assessment\AssessmentAuditService;
@@ -19,6 +20,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -34,11 +36,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'schoolmaster.auth' => AuthenticateBearerToken::class,
+            'schoolmaster.master_access_audit' => RecordMasterAccessMutation::class,
             'schoolmaster.school_context' => ResolveSchoolContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (ValidationException $exception, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (ValidationException $exception, Request $request) {
             app(AssessmentAuditService::class)->recordRequestFailure($request, 'validation', 'rejected', 'validation_failed');
 
             return ApiResponse::validation($exception->errors());
@@ -48,7 +51,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::unauthorized($exception->getMessage() ?: 'Authentication is missing or invalid.');
         });
 
-        $exceptions->render(function (AuthorizationException $exception, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (AuthorizationException $exception, Request $request) {
             app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
                 'failure_type' => 'authorization',
             ]);
@@ -57,7 +60,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
         });
 
-        $exceptions->render(function (AccessDeniedHttpException $exception, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (AccessDeniedHttpException $exception, Request $request) {
             app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
                 'failure_type' => 'access_denied',
             ]);
@@ -66,7 +69,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::forbidden($exception->getMessage() ?: 'The authenticated user lacks permission for this action.');
         });
 
-        $exceptions->render(function (PermissionDeniedException $exception, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (PermissionDeniedException $exception, Request $request) {
             app(ClassroomRosterFailureAudit::class)->record($request, 'forbidden', [
                 'failure_type' => 'permission_denied',
             ]);
@@ -79,7 +82,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::outputExpired($exception->getMessage());
         });
 
-        $exceptions->render(function (ConflictException $exception, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (ConflictException $exception, Request $request) {
             app(ClassroomRosterFailureAudit::class)->record($request, 'conflict', [
                 'failure_type' => 'conflict',
             ]);
@@ -88,7 +91,7 @@ return Application::configure(basePath: dirname(__DIR__))
             return ApiResponse::error('conflict', $exception->getMessage(), [], 409);
         });
 
-        $exceptions->render(function (TenantContextException $exception, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (TenantContextException $exception, Request $request) {
             app(ClassroomRosterFailureAudit::class)->record($request, 'tenant_mismatch', [
                 'failure_type' => 'tenant_context',
             ]);

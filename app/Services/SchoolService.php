@@ -52,6 +52,7 @@ final class SchoolService
             affectedResourceType: School::class,
             affectedResourceId: $school->uuid,
             sourceIp: $sourceIp,
+            masterAccessUsed: $actor->isSystemAdministrator(),
         ));
 
         return $school;
@@ -86,6 +87,7 @@ final class SchoolService
             affectedResourceType: School::class,
             affectedResourceId: $school->uuid,
             sourceIp: $sourceIp,
+            masterAccessUsed: $actor->isSystemAdministrator(),
         ));
 
         return $school;

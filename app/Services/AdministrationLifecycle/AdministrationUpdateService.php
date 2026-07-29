@@ -11,8 +11,8 @@ use App\Models\AcademicPeriod;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
-use App\Services\AuditEventService;
 use App\Services\Addresses\SchoolAddressService;
+use App\Services\AuditEventService;
 use App\Services\Concerns\AuthorizesAdministrationLifecycle;
 use App\Services\Roles\RoleService;
 use App\Services\TenantContextService;
@@ -171,6 +171,7 @@ final class AdministrationUpdateService
             affectedResourceType: School::class,
             affectedResourceId: $school->uuid,
             sourceIp: $sourceIp,
+            masterAccessUsed: $actor->isSystemAdministrator(),
         ));
     }
 }

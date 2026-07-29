@@ -15,6 +15,7 @@ class ScopePolicy
 
     public function school(User $user, string $permission, int $schoolId): bool
     {
-        return $user->school_id === $schoolId && $user->hasPermission($permission, 'school');
+        return ($user->isSystemAdministrator() || $user->school_id === $schoolId)
+            && $user->hasSchoolPermission($permission, $schoolId);
     }
 }

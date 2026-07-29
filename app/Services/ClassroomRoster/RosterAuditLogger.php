@@ -43,6 +43,7 @@ final readonly class RosterAuditLogger
             affectedResourceId: $targetUuid,
             sourceIp: $sourceIp,
             metadata: $summary,
+            masterAccessUsed: $actor?->isSystemAdministrator() ?? false,
         ));
     }
 

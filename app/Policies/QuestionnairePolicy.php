@@ -31,7 +31,7 @@ final class QuestionnairePolicy
 
     private function canManage(User $user, Questionnaire $questionnaire): bool
     {
-        if ($user->school_id !== $questionnaire->school_id) {
+        if (! $user->isSystemAdministrator() && $user->school_id !== $questionnaire->school_id) {
             return false;
         }
 

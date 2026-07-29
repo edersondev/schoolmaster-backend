@@ -34,6 +34,19 @@ final readonly class PlatformSupportAuditService
         ?string $targetId = null,
         array $metadata = [],
     ): PlatformSupportAuditEvent {
+        $metadata = $this->redaction->auditMetadata($metadata);
+        unset($metadata['master_access_used']);
+
+        if ($actor?->isSystemAdministrator() === true && in_array($action, [
+            'support_access_approved',
+            'support_access_requested',
+            'support_access_revoked',
+            'support_opt_in_created',
+            'support_opt_in_revoked',
+        ], true)) {
+            $metadata['master_access_used'] = true;
+        }
+
         return PlatformSupportAuditEvent::query()->create([
             'actor_user_id' => $actor?->id,
             'school_id' => $school?->id,
@@ -46,7 +59,7 @@ final readonly class PlatformSupportAuditService
             'target_id' => $targetId,
             'correlation_id' => $correlationId,
             'reason_code' => $reasonCode,
-            'metadata' => $this->redaction->auditMetadata($metadata),
+            'metadata' => $metadata,
             'occurred_at' => now(),
         ]);
     }

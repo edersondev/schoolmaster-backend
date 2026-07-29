@@ -24,6 +24,11 @@ final class LifecycleHistoryRecorder
         array $metadata = [],
     ): LifecycleHistory {
         $schoolId = $resource->getAttribute('school_id');
+        unset($metadata['master_access_used']);
+
+        if ($actor->isSystemAdministrator()) {
+            $metadata['master_access_used'] = true;
+        }
 
         return LifecycleHistory::query()->create([
             'school_id' => $schoolId === null ? null : (int) $schoolId,

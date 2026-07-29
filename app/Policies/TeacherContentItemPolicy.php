@@ -36,7 +36,7 @@ final class TeacherContentItemPolicy
 
     private function canManage(User $user, TeacherContentItem $content): bool
     {
-        if ($user->school_id !== $content->school_id) {
+        if (! $user->isSystemAdministrator() && $user->school_id !== $content->school_id) {
             return false;
         }
 

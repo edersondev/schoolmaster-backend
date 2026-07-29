@@ -34,7 +34,7 @@ final class AcademicRecordPolicy
 
     private function canManage(User $user, Model $record): bool
     {
-        if ($user->school_id !== $record->school_id) {
+        if (! $user->isSystemAdministrator() && $user->school_id !== $record->school_id) {
             return false;
         }
 

@@ -10,7 +10,7 @@ final class AcademicRecordImportPolicy
 {
     public function import(User $user, int $schoolId): bool
     {
-        return $user->school_id === $schoolId
+        return ($user->isSystemAdministrator() || $user->school_id === $schoolId)
             && $user->hasSchoolPermission('users.manage', $schoolId);
     }
 }

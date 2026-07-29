@@ -37,6 +37,19 @@ final class CurrentUserApiTest extends TestCase
             ->assertJsonPath('error.code', 'token_revoked');
     }
 
+    public function test_system_administrator_role_is_exposed_without_a_response_schema_change(): void
+    {
+        $user = $this->createSystemAdministrator();
+
+        $this->withToken($this->bearerTokenFor($user))
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonCount(1, 'data.roles')
+            ->assertJsonPath('data.roles.0.name', 'System Administrator')
+            ->assertJsonCount(0, 'data.permissions')
+            ->assertJsonMissingPath('data.master_access');
+    }
+
     public function test_rejects_tenant_mismatch_context(): void
     {
         $school = School::factory()->create();

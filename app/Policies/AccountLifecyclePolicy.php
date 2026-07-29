@@ -24,7 +24,7 @@ final class AccountLifecyclePolicy
             return false;
         }
 
-        return $actor->school_id === $school->id
+        return ($actor->isSystemAdministrator() || $actor->school_id === $school->id)
             && $actor->hasSchoolPermission('account_lifecycle.manage', $school->id);
     }
 }

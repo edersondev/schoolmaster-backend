@@ -23,6 +23,13 @@ final class StudentTransferValidator
 
     public function authorizedDestinationSchoolIds(User $actor): Collection
     {
+        if ($actor->isSystemAdministrator()) {
+            return School::query()
+                ->where('status', 'active')
+                ->pluck('id')
+                ->values();
+        }
+
         return $actor->roles()
             ->where('roles.status', 'active')
             ->where('roles.scope', 'school')

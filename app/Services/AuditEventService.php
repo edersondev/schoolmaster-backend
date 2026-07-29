@@ -20,6 +20,13 @@ final class AuditEventService
 
     public function record(AuditEventData $data): AuditEvent
     {
+        $metadata = $this->sanitize($data->metadata);
+        unset($metadata['master_access_used']);
+
+        if ($data->masterAccessUsed) {
+            $metadata['master_access_used'] = true;
+        }
+
         return AuditEvent::query()->create([
             'event_type' => $data->eventType,
             'actor_user_id' => $data->actorUserId,
@@ -28,7 +35,7 @@ final class AuditEventService
             'affected_resource_id' => $data->affectedResourceId,
             'outcome' => $data->outcome,
             'source_ip' => $data->sourceIp,
-            'tenant_safe_metadata' => $this->sanitize($data->metadata),
+            'tenant_safe_metadata' => $metadata,
             'occurred_at' => now(),
         ]);
     }

@@ -19,7 +19,7 @@ final class GuardianAuditService
     /**
      * @param  array<string, mixed>  $metadata
      */
-    public function allowed(Request $request, GuardianActorContext $actor, string $action, ?StudentProfile $student = null, array $metadata = []): void
+    public function allowed(Request $request, GuardianActorContext $actor, string $action, ?StudentProfile $student = null, array $metadata = [], bool $masterAccessUsed = false): void
     {
         $this->audit->record(new AuditEventData(
             eventType: 'guardian_self_service.'.$action,
@@ -30,13 +30,14 @@ final class GuardianAuditService
             outcome: 'allowed',
             sourceIp: $request->ip(),
             metadata: $metadata + ['guardian_id' => $actor->guardian->uuid],
+            masterAccessUsed: $masterAccessUsed,
         ));
     }
 
     /**
      * @param  array<string, mixed>  $metadata
      */
-    public function denied(Request $request, string $action, string $reason, ?User $actor = null, ?School $school = null, ?string $targetId = null, array $metadata = []): void
+    public function denied(Request $request, string $action, string $reason, ?User $actor = null, ?School $school = null, ?string $targetId = null, array $metadata = [], bool $masterAccessUsed = false): void
     {
         $this->audit->record(new AuditEventData(
             eventType: 'guardian_self_service.'.$action,
@@ -47,6 +48,7 @@ final class GuardianAuditService
             outcome: 'denied',
             sourceIp: $request->ip(),
             metadata: $metadata + ['reason' => $reason],
+            masterAccessUsed: $masterAccessUsed,
         ));
     }
 }
