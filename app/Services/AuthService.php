@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\DTOs\AuditEventData;
-use App\Repositories\AccountLifecycleRepository;
+use App\DTOs\TenantContext;
 use App\Exceptions\TokenRejectedException;
 use App\Models\School;
 use App\Models\User;
+use App\Repositories\AccountLifecycleRepository;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -68,7 +69,10 @@ final class AuthService
         return [$user, $plainToken, $expiresAt];
     }
 
-    public function currentUser(Request $request): User
+    /**
+     * @return array{0: User, 1: TenantContext}
+     */
+    public function currentUser(Request $request): array
     {
         /** @var User|null $user */
         $user = $request->attributes->get('auth_user');
@@ -77,9 +81,9 @@ final class AuthService
             throw new TokenRejectedException('unauthorized', 'Authentication is missing or invalid.');
         }
 
-        $this->tenantContextResolver->resolve($request, $user->loadMissing('school'));
+        $tenantContext = $this->tenantContextResolver->resolve($request, $user->loadMissing('school'));
 
-        return $user->loadMissing(['school', 'roles.permissions']);
+        return [$user->loadMissing(['school', 'roles.permissions']), $tenantContext];
     }
 
     public function logout(Request $request): void

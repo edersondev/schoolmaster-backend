@@ -61,7 +61,7 @@ final class SchoolDetailUpdateTest extends TestCase
         $profile = $this->validSchoolProfilePayload(['name' => 'Still Active']);
         $school = School::factory()->create([
             'name' => 'Still Active',
-            'status' => 'active',
+            'status' => School::STATUS_ACTIVE,
             'inep_code' => $profile['inep_code'],
             'document' => $profile['document'],
             'email' => $profile['email'],
@@ -81,7 +81,7 @@ final class SchoolDetailUpdateTest extends TestCase
         $this->assertDatabaseHas('schools', [
             'id' => $school->id,
             'name' => 'Still Active',
-            'status' => 'active',
+            'status' => School::STATUS_ACTIVE,
         ]);
     }
 }

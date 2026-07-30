@@ -106,7 +106,7 @@ final class StudentProfileTransferService
         return School::query()
             ->where('uuid', $schoolId)
             ->whereIn('id', $authorizedSchoolIds)
-            ->where('status', 'active')
+            ->where('status', School::STATUS_ACTIVE)
             ->first();
     }
 
