@@ -36,4 +36,25 @@ final class StudentProfileTransferDestinationTest extends TestCase
             ->assertJsonPath('data.transfer.destination_school_id', $destinationSchool->uuid)
             ->assertJsonPath('data.transfer.destination_student_profile_id', $destinationProfile->uuid);
     }
+
+    public function test_system_administrator_can_link_profile_in_active_destination_school(): void
+    {
+        $sourceSchool = School::factory()->create();
+        $destinationSchool = School::factory()->create();
+        $admin = $this->createSystemAdministrator();
+        $sourceProfile = StudentEnrollmentFactory::profile($sourceSchool, User::factory()->create(['school_id' => $sourceSchool->id]));
+        $destinationProfile = StudentEnrollmentFactory::profile($destinationSchool, User::factory()->create(['school_id' => $destinationSchool->id]));
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $sourceSchool->uuid)
+            ->postJson('/api/v1/student-profiles/'.$sourceProfile->uuid.'/transfer', [
+                'effective_at' => '2026-04-01',
+                'reason' => 'Platform-authorized destination profile.',
+                'destination_school_id' => $destinationSchool->uuid,
+                'destination_student_profile_id' => $destinationProfile->uuid,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.transfer.destination_school_id', $destinationSchool->uuid)
+            ->assertJsonPath('data.transfer.destination_student_profile_id', $destinationProfile->uuid);
+    }
 }

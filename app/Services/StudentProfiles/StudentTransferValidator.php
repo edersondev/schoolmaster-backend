@@ -25,7 +25,7 @@ final class StudentTransferValidator
     {
         if ($actor->isSystemAdministrator()) {
             return School::query()
-                ->where('status', 'active')
+                ->where('status', School::STATUS_ACTIVE)
                 ->pluck('id')
                 ->values();
         }
@@ -73,7 +73,7 @@ final class StudentTransferValidator
         $school = School::query()
             ->where('uuid', $destinationSchoolId)
             ->whereIn('id', $authorizedSchoolIds->all())
-            ->where('status', 'active')
+            ->where('status', School::STATUS_ACTIVE)
             ->first();
 
         if ($school === null) {
