@@ -25,9 +25,14 @@ final class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $this->auth->currentUser($request);
+        [$user, $tenantContext] = $this->auth->currentUser($request);
 
-        return ApiResponse::success(AuthSessionResource::make($user, $request->bearerToken(), $request->attributes->get('auth_token')->expires_at));
+        return ApiResponse::success(AuthSessionResource::make(
+            $user,
+            $request->bearerToken(),
+            $request->attributes->get('auth_token')->expires_at,
+            $tenantContext->school,
+        ));
     }
 
     public function logout(Request $request): JsonResponse

@@ -50,6 +50,48 @@ final class CurrentUserApiTest extends TestCase
             ->assertJsonMissingPath('data.master_access');
     }
 
+    public function test_system_administrator_without_school_header_has_null_resolved_school(): void
+    {
+        $user = $this->createSystemAdministrator();
+
+        $this->withToken($this->bearerTokenFor($user))
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.resolved_school', null);
+    }
+
+    public function test_system_administrator_can_resolve_exact_active_school_from_header(): void
+    {
+        $school = School::factory()->create();
+        $user = $this->createSystemAdministrator();
+
+        $this->withToken($this->bearerTokenFor($user))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.resolved_school.id', $school->uuid)
+            ->assertJsonPath('data.resolved_school.status', School::STATUS_ACTIVE);
+    }
+
+    public function test_system_administrator_cannot_resolve_inactive_or_unknown_school(): void
+    {
+        $inactiveSchool = School::factory()->inactive()->create();
+        $user = $this->createSystemAdministrator();
+        $token = $this->bearerTokenFor($user);
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $inactiveSchool->uuid)
+            ->getJson('/api/v1/auth/me')
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'tenant_mismatch');
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', fake()->uuid())
+            ->getJson('/api/v1/auth/me')
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'tenant_mismatch');
+    }
+
     public function test_rejects_tenant_mismatch_context(): void
     {
         $school = School::factory()->create();
