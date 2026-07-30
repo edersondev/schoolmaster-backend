@@ -11,6 +11,7 @@ use App\Http\Resources\AuthSessionResource;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 final class AuthController extends Controller
 {
@@ -26,12 +27,17 @@ final class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         [$user, $tenantContext] = $this->auth->currentUser($request);
+        $resolvedSchool = $tenantContext->school;
+
+        if ($user->isPlatformUser() && $resolvedSchool !== null && Gate::forUser($user)->denies('view', $resolvedSchool)) {
+            $resolvedSchool = null;
+        }
 
         return ApiResponse::success(AuthSessionResource::make(
             $user,
             $request->bearerToken(),
             $request->attributes->get('auth_token')->expires_at,
-            $tenantContext->school,
+            $resolvedSchool,
         ));
     }
 

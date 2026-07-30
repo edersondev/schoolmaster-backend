@@ -73,6 +73,30 @@ final class CurrentUserApiTest extends TestCase
             ->assertJsonPath('data.resolved_school.status', School::STATUS_ACTIVE);
     }
 
+    public function test_limited_platform_user_cannot_expose_school_selected_by_header(): void
+    {
+        $school = School::factory()->create();
+        $user = $this->createLimitedPlatformUser();
+
+        $this->withToken($this->bearerTokenFor($user))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.resolved_school', null);
+    }
+
+    public function test_authorized_platform_user_can_resolve_school_selected_by_header(): void
+    {
+        $school = School::factory()->create();
+        $user = $this->createPlatformUser(['schools.view']);
+
+        $this->withToken($this->bearerTokenFor($user))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/auth/me')
+            ->assertOk()
+            ->assertJsonPath('data.resolved_school.id', $school->uuid);
+    }
+
     public function test_system_administrator_cannot_resolve_inactive_or_unknown_school(): void
     {
         $inactiveSchool = School::factory()->inactive()->create();
