@@ -106,6 +106,28 @@ final class UserService
     }
 
     /**
+     * @param  array<int, string>  $roleUuids
+     * @return Collection<int, Role>
+     */
+    public function activePlatformRoles(array $roleUuids): Collection
+    {
+        $roles = Role::query()
+            ->whereIn('uuid', $roleUuids)
+            ->where('status', 'active')
+            ->where('scope', 'platform')
+            ->whereNull('school_id')
+            ->get();
+
+        if ($roles->count() !== count(array_unique($roleUuids))) {
+            throw ValidationException::withMessages([
+                'role_ids' => ['All roles must exist, be active, platform-scoped, and have no school ownership.'],
+            ]);
+        }
+
+        return $roles;
+    }
+
+    /**
      * @param  array<string, mixed>  $filters
      */
     private function applySorts($query, array $filters): void

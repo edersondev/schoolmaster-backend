@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\AdministrationLifecycle;
 
+use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -110,5 +111,42 @@ final class UserDetailUpdateTest extends TestCase
             'id' => $user->id,
             'email' => 'target@example.test',
         ]);
+    }
+
+    public function test_platform_user_update_accepts_only_active_platform_roles(): void
+    {
+        $actor = $this->createPlatformUser(['schools.view', 'schools.manage']);
+        $target = User::factory()->create(['school_id' => null]);
+        $platformRole = Role::query()->create([
+            'school_id' => null,
+            'scope' => 'platform',
+            'name' => 'Platform Operations',
+            'status' => 'active',
+        ]);
+        $schoolRole = Role::query()->create([
+            'school_id' => School::factory()->create()->id,
+            'scope' => 'school',
+            'name' => 'School Operations',
+            'status' => 'active',
+        ]);
+        $token = $this->bearerTokenFor($actor);
+
+        $this->withToken($token)
+            ->patchJson("/api/v1/users/{$target->uuid}", [
+                'role_ids' => [$platformRole->uuid],
+            ])
+            ->assertOk();
+
+        $this->assertTrue($target->roles()->whereKey($platformRole->id)->exists());
+
+        $this->withToken($token)
+            ->patchJson("/api/v1/users/{$target->uuid}", [
+                'role_ids' => [$schoolRole->uuid],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertTrue($target->roles()->whereKey($platformRole->id)->exists());
+        $this->assertFalse($target->roles()->whereKey($schoolRole->id)->exists());
     }
 }

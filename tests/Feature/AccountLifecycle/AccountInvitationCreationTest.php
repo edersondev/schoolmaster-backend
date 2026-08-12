@@ -54,13 +54,6 @@ final class AccountInvitationCreationTest extends TestCase
             'scope' => 'platform',
             'name' => 'Platform Operator',
         ]);
-        User::factory()->create([
-            'school_id' => null,
-            'full_name' => 'Platform Invitee',
-            'email' => 'platform-invited@example.test',
-            'status' => 'invited',
-        ]);
-
         $this->withToken($token)
             ->postJson('/api/v1/account-invitations', [
                 'scope' => 'platform',
@@ -71,6 +64,38 @@ final class AccountInvitationCreationTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('data.scope', 'platform')
             ->assertJsonPath('data.school_id', null);
+
+        $invitee = User::query()
+            ->whereNull('school_id')
+            ->where('email', 'platform-invited@example.test')
+            ->firstOrFail();
+
+        $this->assertSame('invited', $invitee->status);
+        $this->assertTrue($invitee->roles()->whereKey($role->id)->exists());
+    }
+
+    public function test_invalid_platform_roles_do_not_provision_an_invitee(): void
+    {
+        $admin = $this->createPlatformUser(['account_lifecycle.manage']);
+        $inactiveRole = Role::query()->create([
+            'scope' => 'platform',
+            'name' => 'Inactive Platform Operator',
+            'status' => 'inactive',
+        ]);
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->postJson('/api/v1/account-invitations', [
+                'scope' => 'platform',
+                'full_name' => 'Invalid Platform Invitee',
+                'email' => 'invalid-platform-invited@example.test',
+                'role_ids' => [$inactiveRole->uuid],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertDatabaseMissing('users', [
+            'email' => 'invalid-platform-invited@example.test',
+        ]);
     }
 
     public function test_invitation_does_not_create_a_user_from_draft_data(): void

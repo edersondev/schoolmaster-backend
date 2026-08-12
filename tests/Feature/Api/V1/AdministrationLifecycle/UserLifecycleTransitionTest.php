@@ -30,4 +30,29 @@ final class UserLifecycleTransitionTest extends TestCase
 
         $this->assertDatabaseHas('lifecycle_histories', ['resource_uuid' => $user->uuid, 'operation' => 'deactivated']);
     }
+
+    public function test_school_admin_cannot_activate_invited_user_before_password_setup(): void
+    {
+        $school = School::factory()->create();
+        $admin = $this->createSchoolAdmin($school, ['users.view', 'users.lifecycle']);
+        $user = User::factory()->create([
+            'school_id' => $school->id,
+            'status' => 'invited',
+        ]);
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson("/api/v1/users/{$user->uuid}/activate", [
+                'effective_at' => '2026-08-12',
+                'reason' => 'Attempted setup bypass',
+            ])
+            ->assertConflict()
+            ->assertJsonPath('error.code', 'conflict');
+
+        $this->assertSame('invited', $user->refresh()->status);
+        $this->assertDatabaseMissing('lifecycle_histories', [
+            'resource_uuid' => $user->uuid,
+            'operation' => 'activated',
+        ]);
+    }
 }

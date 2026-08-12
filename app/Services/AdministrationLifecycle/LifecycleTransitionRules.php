@@ -6,6 +6,7 @@ namespace App\Services\AdministrationLifecycle;
 
 use App\Exceptions\ConflictException;
 use App\Models\School;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -27,6 +28,10 @@ final class LifecycleTransitionRules
 
         if ($isDeleted) {
             throw new ConflictException('Soft-deleted records must be restored before other lifecycle actions.');
+        }
+
+        if ($resource instanceof User && $action === LifecycleAction::ACTIVATE && $status === 'invited') {
+            throw new ConflictException('Invited accounts can only be activated by completing invitation setup.');
         }
 
         if ($action === LifecycleAction::ACTIVATE && $status === 'active') {

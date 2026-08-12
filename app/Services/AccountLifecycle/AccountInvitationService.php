@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Policies\AccountLifecyclePolicy;
 use App\Repositories\AccountLifecycleRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final class AccountInvitationService
@@ -42,7 +43,18 @@ final class AccountInvitationService
             $user = $this->repository->findUserByEmailIncludingTrashed($data->email, $school?->id);
 
             if ($user === null) {
-                throw new ConflictException('Account is not eligible for invitation.');
+                if ($data->scope !== 'platform' || User::withTrashed()->where('email', $data->email)->exists()) {
+                    throw new ConflictException('Account is not eligible for invitation.');
+                }
+
+                $user = User::query()->create([
+                    'school_id' => null,
+                    'name' => $data->fullName,
+                    'full_name' => $data->fullName,
+                    'email' => $data->email,
+                    'password' => Str::password(32),
+                    'status' => 'invited',
+                ]);
             }
 
             $this->authorize($actor, $data->scope, $school, $user);

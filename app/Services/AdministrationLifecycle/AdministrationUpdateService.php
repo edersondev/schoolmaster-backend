@@ -73,7 +73,9 @@ final class AdministrationUpdateService
         return DB::transaction(function () use ($resource, $resourceType, $attributes, $data, $actor, $fromStatus, $sourceIp, $addressWasSubmitted, $addressPayload): Model {
             if ($resourceType === 'users' && array_key_exists('role_ids', $data->attributes)) {
                 /** @var User $resource */
-                $roles = $this->users->activeSchoolRoles($data->attributes['role_ids'], (int) $resource->school_id);
+                $roles = $resource->school_id === null
+                    ? $this->users->activePlatformRoles($data->attributes['role_ids'])
+                    : $this->users->activeSchoolRoles($data->attributes['role_ids'], (int) $resource->school_id);
                 $resource->roles()->sync($roles->pluck('id')->all());
             }
 
