@@ -14,6 +14,7 @@ final readonly class CreateUserData
         public string $email,
         public array $roleIds,
         public ?string $schoolId = null,
+        public string $accountSetupMode = 'active',
     ) {}
 
     public static function fromArray(array $data): self
@@ -23,6 +24,7 @@ final readonly class CreateUserData
             email: $data['email'],
             roleIds: $data['role_ids'],
             schoolId: $data['school_id'] ?? null,
+            accountSetupMode: $data['account_setup_mode'] ?? 'active',
         );
     }
 }

@@ -39,14 +39,18 @@ final class AdministrationUpdateService
     public function update(User $actor, ?TenantContext $context, string $resourceType, string $uuid, UpdateAdministrationResourceData $data, ?string $sourceIp = null): Model
     {
         $config = $this->registry->config($resourceType);
-        $resource = app(AdministrationDetailService::class)->get($actor, $context, $resourceType, $uuid);
+        $platformMode = ($config['platform_mode'] ?? false) && $context?->school === null;
 
-        if ($config['scope'] === 'school') {
+        if ($platformMode) {
+            $this->assertPlatformLifecyclePermission($actor, 'schools.manage');
+        } elseif ($config['scope'] === 'school') {
             $school = $this->tenantContext->requireSchool($context);
             $this->assertSchoolLifecyclePermission($actor, $school, "{$config['permission']}.manage");
         } else {
             $this->assertPlatformLifecyclePermission($actor, 'schools.manage');
         }
+
+        $resource = app(AdministrationDetailService::class)->get($actor, $context, $resourceType, $uuid);
 
         $attributes = array_intersect_key($data->attributes, array_flip($config['mutable']));
         $attributes = $this->normalizeAttributes($resource, $attributes);
@@ -54,6 +58,17 @@ final class AdministrationUpdateService
         $addressPayload = $attributes['address'] ?? null;
         unset($attributes['address']);
         $fromStatus = (string) ($resource->getAttribute('status') ?? '');
+
+        if (
+            $resource instanceof User
+            && $fromStatus === 'invited'
+            && array_key_exists('status', $attributes)
+            && $attributes['status'] !== 'invited'
+        ) {
+            throw ValidationException::withMessages([
+                'status' => ['Invited accounts can only be activated by completing invitation setup.'],
+            ]);
+        }
 
         return DB::transaction(function () use ($resource, $resourceType, $attributes, $data, $actor, $fromStatus, $sourceIp, $addressWasSubmitted, $addressPayload): Model {
             if ($resourceType === 'users' && array_key_exists('role_ids', $data->attributes)) {

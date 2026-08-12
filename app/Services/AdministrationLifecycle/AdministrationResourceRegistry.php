@@ -32,6 +32,7 @@ final class AdministrationResourceRegistry
                 'model' => User::class,
                 'permission' => 'users',
                 'scope' => 'school',
+                'platform_mode' => true,
                 'relations' => ['school', 'roles.permissions', 'roles.school'],
                 'mutable' => ['full_name', 'email', 'status'],
             ],

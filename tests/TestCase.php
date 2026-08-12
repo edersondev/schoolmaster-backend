@@ -35,9 +35,10 @@ abstract class TestCase extends BaseTestCase
         foreach ($permissions as $permission) {
             $role->permissions()->attach(Permission::query()->firstOrCreate([
                 'code' => $permission,
+                'scope' => 'platform',
             ], [
                 'name' => str_replace('.', ' ', $permission),
-                'scope' => 'platform',
+                'status' => 'active',
             ]));
         }
 
@@ -102,9 +103,10 @@ abstract class TestCase extends BaseTestCase
         foreach ($permissions as $permission) {
             $role->permissions()->attach(Permission::query()->firstOrCreate([
                 'code' => $permission,
+                'scope' => 'school',
             ], [
                 'name' => str_replace('.', ' ', $permission),
-                'scope' => 'school',
+                'status' => 'active',
             ]));
         }
 
@@ -142,9 +144,10 @@ abstract class TestCase extends BaseTestCase
         foreach ($permissions as $permission) {
             $role->permissions()->attach(Permission::query()->firstOrCreate([
                 'code' => $permission,
+                'scope' => 'school',
             ], [
                 'name' => str_replace('.', ' ', $permission),
-                'scope' => 'school',
+                'status' => 'active',
             ]));
         }
 

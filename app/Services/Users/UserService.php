@@ -75,7 +75,7 @@ final class UserService
                 'full_name' => $data->fullName,
                 'email' => $data->email,
                 'password' => Str::password(32),
-                'status' => 'active',
+                'status' => $data->accountSetupMode === 'invitation' ? 'invited' : 'active',
             ]);
             $user->roles()->sync($roles->pluck('id')->all());
 

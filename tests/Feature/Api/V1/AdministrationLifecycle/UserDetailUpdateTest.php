@@ -45,6 +45,54 @@ final class UserDetailUpdateTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_platform_user_can_view_only_platform_user_without_school_context(): void
+    {
+        $school = School::factory()->create();
+        $actor = $this->createPlatformUser(['schools.view']);
+        $platformTarget = User::factory()->create(['school_id' => null]);
+        $schoolTarget = User::factory()->create(['school_id' => $school->id]);
+        $token = $this->bearerTokenFor($actor);
+
+        $this->withToken($token)
+            ->getJson("/api/v1/users/{$platformTarget->uuid}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $platformTarget->uuid);
+        $this->withToken($token)
+            ->getJson("/api/v1/users/{$schoolTarget->uuid}")
+            ->assertNotFound();
+    }
+
+    public function test_school_detail_unknown_and_opposite_mode_targets_are_indistinguishable(): void
+    {
+        $school = School::factory()->create();
+        $actor = $this->createSchoolAdmin($school, ['users.view']);
+        $platformTarget = User::factory()->create(['school_id' => null]);
+        $token = $this->bearerTokenFor($actor);
+
+        $opposite = $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson("/api/v1/users/{$platformTarget->uuid}");
+        $unknown = $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/users/00000000-0000-4000-8000-000000000000');
+
+        $opposite->assertNotFound();
+        $unknown->assertNotFound();
+        $this->assertSame($unknown->json('error.code'), $opposite->json('error.code'));
+    }
+
+    public function test_lifecycle_permission_does_not_grant_user_detail_access(): void
+    {
+        $school = School::factory()->create();
+        $actor = $this->createSchoolAdmin($school, ['account_lifecycle.manage']);
+        $target = User::factory()->create(['school_id' => $school->id]);
+
+        $this->withToken($this->bearerTokenFor($actor))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson("/api/v1/users/{$target->uuid}")
+            ->assertForbidden();
+    }
+
     public function test_user_update_rejects_duplicate_email_before_persistence(): void
     {
         $school = School::factory()->create();
