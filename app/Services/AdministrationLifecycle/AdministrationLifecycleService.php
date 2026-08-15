@@ -41,8 +41,12 @@ final class AdministrationLifecycleService
     {
         $config = $this->registry->config($resourceType);
         $query = $config['model']::query()->with($config['relations'])->withTrashed();
+        $platformMode = ($config['platform_mode'] ?? false) && $context?->school === null;
 
-        if ($config['scope'] === 'school') {
+        if ($platformMode) {
+            $this->assertPlatformLifecyclePermission($actor, 'schools.manage');
+            $resource = $query->whereNull('school_id')->where('uuid', $uuid)->firstOrFail();
+        } elseif ($config['scope'] === 'school') {
             $school = $this->tenantContext->requireSchool($context);
             $resource = $query->where('school_id', $school->id)->where('uuid', $uuid)->firstOrFail();
             $this->assertSchoolLifecyclePermission($actor, $school, "{$config['permission']}.lifecycle");

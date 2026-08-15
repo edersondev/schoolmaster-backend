@@ -149,4 +149,62 @@ final class UserDetailUpdateTest extends TestCase
         $this->assertTrue($target->roles()->whereKey($platformRole->id)->exists());
         $this->assertFalse($target->roles()->whereKey($schoolRole->id)->exists());
     }
+
+    public function test_non_master_platform_user_cannot_assign_roles_to_self(): void
+    {
+        $actor = $this->createPlatformUser(['schools.view', 'schools.manage']);
+        $originalRole = $actor->roles()->firstOrFail();
+        $systemAdministratorRole = Role::query()->create([
+            'school_id' => null,
+            'scope' => 'platform',
+            'name' => 'System Administrator',
+            'status' => 'active',
+        ]);
+
+        $this->withToken($this->bearerTokenFor($actor))
+            ->patchJson("/api/v1/users/{$actor->uuid}", [
+                'role_ids' => [$systemAdministratorRole->uuid],
+            ])
+            ->assertForbidden();
+
+        $this->assertTrue($actor->roles()->whereKey($originalRole->id)->exists());
+        $this->assertFalse($actor->roles()->whereKey($systemAdministratorRole->id)->exists());
+        $this->assertFalse($actor->refresh()->isSystemAdministrator());
+    }
+
+    public function test_non_master_platform_user_cannot_assign_master_role_to_another_user(): void
+    {
+        $actor = $this->createPlatformUser(['schools.view', 'schools.manage']);
+        $target = User::factory()->create(['school_id' => null]);
+        $systemAdministratorRole = Role::query()->create([
+            'school_id' => null,
+            'scope' => 'platform',
+            'name' => 'System Administrator',
+            'status' => 'active',
+        ]);
+
+        $this->withToken($this->bearerTokenFor($actor))
+            ->patchJson("/api/v1/users/{$target->uuid}", [
+                'role_ids' => [$systemAdministratorRole->uuid],
+            ])
+            ->assertForbidden();
+
+        $this->assertFalse($target->roles()->whereKey($systemAdministratorRole->id)->exists());
+        $this->assertFalse($target->refresh()->isSystemAdministrator());
+    }
+
+    public function test_system_administrator_can_assign_master_role_to_platform_user(): void
+    {
+        $actor = $this->createSystemAdministrator();
+        $systemAdministratorRole = $actor->roles()->where('name', 'System Administrator')->firstOrFail();
+        $target = User::factory()->create(['school_id' => null]);
+
+        $this->withToken($this->bearerTokenFor($actor))
+            ->patchJson("/api/v1/users/{$target->uuid}", [
+                'role_ids' => [$systemAdministratorRole->uuid],
+            ])
+            ->assertOk();
+
+        $this->assertTrue($target->refresh()->isSystemAdministrator());
+    }
 }
