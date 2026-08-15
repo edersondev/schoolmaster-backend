@@ -32,6 +32,12 @@ final class AccountInvitationSecurityTest extends TestCase
             'email' => 'limited@example.test',
             'role_ids' => [$role->uuid],
         ];
+        User::factory()->create([
+            'school_id' => $school->id,
+            'full_name' => $payload['full_name'],
+            'email' => $payload['email'],
+            'status' => 'invited',
+        ]);
 
         for ($i = 0; $i < 3; $i++) {
             $this->withToken($token)
@@ -58,6 +64,12 @@ final class AccountInvitationSecurityTest extends TestCase
         ]);
         $admin = $this->createSchoolAdmin($school, ['account_lifecycle.manage']);
         $token = $this->bearerTokenFor($admin);
+        User::factory()->create([
+            'school_id' => $school->id,
+            'full_name' => 'Failure Invitee',
+            'email' => 'failure@example.test',
+            'status' => 'invited',
+        ]);
 
         $response = $this->withToken($token)
             ->withHeader('X-School-Id', $school->uuid)

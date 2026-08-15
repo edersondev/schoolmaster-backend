@@ -114,7 +114,10 @@ class User extends Authenticatable
         return $this->roles()
             ->where('roles.status', 'active')
             ->where('roles.scope', $scope)
-            ->whereHas('permissions', fn ($query) => $query->where('code', $code)->where('permissions.status', 'active'))
+            ->whereHas('permissions', fn ($query) => $query
+                ->where('code', $code)
+                ->where('permissions.scope', $scope)
+                ->where('permissions.status', 'active'))
             ->exists();
     }
 

@@ -13,7 +13,7 @@ final class PermissionSeeder extends Seeder
     {
         foreach ($this->permissions() as $data) {
             Permission::query()->updateOrCreate(
-                ['code' => $data['code']],
+                ['code' => $data['code'], 'scope' => $data['scope']],
                 $data,
             );
         }
@@ -28,9 +28,11 @@ final class PermissionSeeder extends Seeder
             ['code' => 'schools.view', 'name' => 'View schools', 'scope' => 'platform', 'status' => 'active'],
             ['code' => 'schools.manage', 'name' => 'Manage schools', 'scope' => 'platform', 'status' => 'active'],
             ['code' => 'schools.lifecycle', 'name' => 'Manage school lifecycle', 'scope' => 'platform', 'status' => 'active'],
+            ['code' => 'account_lifecycle.manage', 'name' => 'Manage platform account lifecycle', 'scope' => 'platform', 'status' => 'active'],
             ['code' => 'users.view', 'name' => 'View users', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'users.manage', 'name' => 'Manage users', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'users.lifecycle', 'name' => 'Manage user lifecycle', 'scope' => 'school', 'status' => 'active'],
+            ['code' => 'account_lifecycle.manage', 'name' => 'Manage school account lifecycle', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'roles.view', 'name' => 'View roles', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'roles.manage', 'name' => 'Manage roles', 'scope' => 'school', 'status' => 'active'],
             ['code' => 'roles.lifecycle', 'name' => 'Manage role lifecycle', 'scope' => 'school', 'status' => 'active'],

@@ -57,6 +57,10 @@ final class AdministrationLifecyclePolicy
                 || $user->hasPermission($action === 'view' ? 'schools.view' : 'schools.manage', 'platform');
         }
 
+        if ($resource instanceof User && $resource->school_id === null) {
+            return $user->hasPermission($action === 'view' ? 'schools.view' : 'schools.manage', 'platform');
+        }
+
         $schoolId = (int) $resource->getAttribute('school_id');
 
         return $user->hasSchoolPermission($this->permissionForModel($resource, $action), $schoolId)

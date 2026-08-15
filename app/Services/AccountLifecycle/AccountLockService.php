@@ -8,9 +8,7 @@ use App\DTOs\AccountLifecycle\AccountLockData;
 use App\DTOs\TenantContext;
 use App\Exceptions\ConflictException;
 use App\Exceptions\PermissionDeniedException;
-use App\Exceptions\TenantContextException;
 use App\Models\AccountLock;
-use App\Models\School;
 use App\Models\User;
 use App\Policies\AccountLifecyclePolicy;
 use App\Repositories\AccountLifecycleRepository;
@@ -97,21 +95,22 @@ final class AccountLockService
 
     private function target(User $actor, TenantContext $context, string $userId): User
     {
-        $target = $this->repository->findUserByUuid($userId);
+        $school = $context->school;
+        $scope = $school === null ? 'platform' : 'school';
+
+        if (! $this->policy->manage($actor, $scope, $school)) {
+            throw new PermissionDeniedException('The authenticated user lacks permission for this action.');
+        }
+
+        $target = $school === null
+            ? $this->repository->findPlatformUserByUuid($userId)
+            : $this->repository->findSchoolUserByUuid($userId, $school->id);
 
         if (! $target instanceof User) {
-            throw new ModelNotFoundException();
+            throw new ModelNotFoundException;
         }
 
-        $school = $target->school_id === null ? null : $context->school;
-        if ($target->school_id !== null && ($school === null || $school->id !== $target->school_id)) {
-            throw new TenantContextException('Tenant context is missing, inactive, or outside permitted scope.');
-        }
-
-        $scope = $target->school_id === null ? 'platform' : 'school';
-        $policySchool = $scope === 'school' ? $school : null;
-
-        if (! $this->policy->manage($actor, $scope, $policySchool instanceof School ? $policySchool : null)) {
+        if (! $this->policy->manage($actor, $scope, $school, $target)) {
             throw new PermissionDeniedException('The authenticated user lacks permission for this action.');
         }
 

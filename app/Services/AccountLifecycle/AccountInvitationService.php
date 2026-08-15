@@ -42,28 +42,34 @@ final class AccountInvitationService
         return DB::transaction(function () use ($actor, $data, $school, $roles, $sourceIp): AccountInvitation {
             $user = $this->repository->findUserByEmailIncludingTrashed($data->email, $school?->id);
 
-            if ($user !== null) {
-                if ($user->trashed() || $user->status === 'inactive') {
-                    throw new ConflictException('Inactive or deleted accounts cannot be invited.');
-                }
-
-                if ($user->status === 'active') {
-                    throw new ConflictException('Existing active accounts cannot be invited again.');
-                }
-
-                if ($user->status !== 'invited') {
+            if ($user === null) {
+                if ($data->scope !== 'platform' || User::withTrashed()->where('email', $data->email)->exists()) {
                     throw new ConflictException('Account is not eligible for invitation.');
                 }
+
+                $user = User::query()->create([
+                    'school_id' => null,
+                    'name' => $data->fullName,
+                    'full_name' => $data->fullName,
+                    'email' => $data->email,
+                    'password' => Str::password(32),
+                    'status' => 'invited',
+                ]);
             }
 
-            $user ??= User::query()->create([
-                'school_id' => $school?->id,
-                'name' => $data->fullName,
-                'full_name' => $data->fullName,
-                'email' => $data->email,
-                'password' => Str::password(32),
-                'status' => 'invited',
-            ]);
+            $this->authorize($actor, $data->scope, $school, $user);
+
+            if ($user->trashed() || $user->status === 'inactive') {
+                throw new ConflictException('Inactive or deleted accounts cannot be invited.');
+            }
+
+            if ($user->status === 'active') {
+                throw new ConflictException('Existing active accounts cannot be invited again.');
+            }
+
+            if ($user->status !== 'invited') {
+                throw new ConflictException('Account is not eligible for invitation.');
+            }
 
             if ($user->trashed() || $user->school_id !== $school?->id) {
                 throw new TenantContextException('Tenant context is missing, inactive, or outside permitted scope.');
@@ -137,9 +143,9 @@ final class AccountInvitationService
         ), $sourceIp);
     }
 
-    private function authorize(User $actor, string $scope, ?School $school): void
+    private function authorize(User $actor, string $scope, ?School $school, ?User $target = null): void
     {
-        if (! $this->policy->manage($actor, $scope, $school)) {
+        if (! $this->policy->manage($actor, $scope, $school, $target)) {
             throw new PermissionDeniedException('The authenticated user lacks permission for this action.');
         }
     }

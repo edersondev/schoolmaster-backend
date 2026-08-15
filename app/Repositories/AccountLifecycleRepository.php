@@ -29,6 +29,24 @@ final class AccountLifecycleRepository
         return User::query()->with(['school', 'roles.permissions'])->where('uuid', $uuid)->first();
     }
 
+    public function findPlatformUserByUuid(string $uuid): ?User
+    {
+        return User::query()
+            ->with(['school', 'roles.permissions'])
+            ->whereNull('school_id')
+            ->where('uuid', $uuid)
+            ->first();
+    }
+
+    public function findSchoolUserByUuid(string $uuid, int $schoolId): ?User
+    {
+        return User::query()
+            ->with(['school', 'roles.permissions'])
+            ->where('school_id', $schoolId)
+            ->where('uuid', $uuid)
+            ->first();
+    }
+
     public function findUserByEmail(string $email, ?int $schoolId): ?User
     {
         return User::query()

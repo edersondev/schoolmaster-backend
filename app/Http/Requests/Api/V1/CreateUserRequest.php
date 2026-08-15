@@ -16,6 +16,7 @@ final class CreateUserRequest extends ApiFormRequest
             'email' => ['required', 'email', 'max:255'],
             'role_ids' => ['required', 'array', 'min:1'],
             'role_ids.*' => ['required', 'uuid'],
+            'account_setup_mode' => ['sometimes', 'string', 'in:active,invitation'],
         ];
     }
 }

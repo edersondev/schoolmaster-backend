@@ -24,10 +24,13 @@ final class AdministrationDetailService
         $config = $this->registry->config($resourceType);
         $query = $config['model']::query()->with($config['relations'])->withTrashed();
 
-        if ($config['scope'] === 'school') {
+        if (($config['platform_mode'] ?? false) && $context?->school === null) {
+            $this->assertPlatformLifecyclePermission($actor, 'schools.view');
+            $query->whereNull('school_id');
+        } elseif ($config['scope'] === 'school') {
             $school = $this->tenantContext->requireSchool($context);
-            $query->where('school_id', $school->id);
             $this->assertSchoolLifecyclePermission($actor, $school, "{$config['permission']}.view");
+            $query->where('school_id', $school->id);
         } else {
             $this->assertPlatformLifecyclePermission($actor, 'schools.view');
         }

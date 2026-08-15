@@ -9,22 +9,24 @@ use App\Models\User;
 
 final class AccountLifecyclePolicy
 {
-    public function manage(User $actor, string $scope, ?School $school = null): bool
+    public function manage(User $actor, string $scope, ?School $school = null, ?User $target = null): bool
     {
-        if ($actor->status !== 'active') {
+        if (! $actor->isActive() || ($target !== null && $actor->is($target))) {
             return false;
         }
 
         if ($scope === 'platform') {
-            return $actor->isPlatformUser()
-                && $actor->hasPermission('account_lifecycle.manage', 'platform');
+            return $actor->isSystemAdministrator()
+                || ($actor->isPlatformUser()
+                    && $actor->hasPermission('account_lifecycle.manage', 'platform'));
         }
 
         if ($scope !== 'school' || $school === null || ! $school->isActive()) {
             return false;
         }
 
-        return ($actor->isSystemAdministrator() || $actor->school_id === $school->id)
-            && $actor->hasSchoolPermission('account_lifecycle.manage', $school->id);
+        return $actor->isSystemAdministrator()
+            || ($actor->school_id === $school->id
+                && $actor->hasSchoolPermission('account_lifecycle.manage', $school->id));
     }
 }

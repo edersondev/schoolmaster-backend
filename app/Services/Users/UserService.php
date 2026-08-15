@@ -75,7 +75,7 @@ final class UserService
                 'full_name' => $data->fullName,
                 'email' => $data->email,
                 'password' => Str::password(32),
-                'status' => 'active',
+                'status' => $data->accountSetupMode === 'invitation' ? 'invited' : 'active',
             ]);
             $user->roles()->sync($roles->pluck('id')->all());
 
@@ -99,6 +99,28 @@ final class UserService
         if ($roles->count() !== count(array_unique($roleUuids))) {
             throw ValidationException::withMessages([
                 'role_ids' => ['All roles must exist, be active, school-scoped, and belong to the resolved school.'],
+            ]);
+        }
+
+        return $roles;
+    }
+
+    /**
+     * @param  array<int, string>  $roleUuids
+     * @return Collection<int, Role>
+     */
+    public function activePlatformRoles(array $roleUuids): Collection
+    {
+        $roles = Role::query()
+            ->whereIn('uuid', $roleUuids)
+            ->where('status', 'active')
+            ->where('scope', 'platform')
+            ->whereNull('school_id')
+            ->get();
+
+        if ($roles->count() !== count(array_unique($roleUuids))) {
+            throw ValidationException::withMessages([
+                'role_ids' => ['All roles must exist, be active, platform-scoped, and have no school ownership.'],
             ]);
         }
 
