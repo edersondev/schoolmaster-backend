@@ -11,12 +11,14 @@ use App\Models\AcademicPeriod;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
+use App\Policies\AdministrationLifecyclePolicy;
 use App\Services\Addresses\SchoolAddressService;
 use App\Services\AuditEventService;
 use App\Services\Concerns\AuthorizesAdministrationLifecycle;
 use App\Services\Roles\RoleService;
 use App\Services\TenantContextService;
 use App\Services\Users\UserService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -27,6 +29,7 @@ final class AdministrationUpdateService
 
     public function __construct(
         private readonly AdministrationResourceRegistry $registry,
+        private readonly AdministrationLifecyclePolicy $policy,
         private readonly TenantContextService $tenantContext,
         private readonly AdministrationLifecycleService $lifecycle,
         private readonly LifecycleHistoryRecorder $history,
@@ -73,9 +76,16 @@ final class AdministrationUpdateService
         return DB::transaction(function () use ($resource, $resourceType, $attributes, $data, $actor, $fromStatus, $sourceIp, $addressWasSubmitted, $addressPayload): Model {
             if ($resourceType === 'users' && array_key_exists('role_ids', $data->attributes)) {
                 /** @var User $resource */
-                $roles = $resource->school_id === null
-                    ? $this->users->activePlatformRoles($data->attributes['role_ids'])
-                    : $this->users->activeSchoolRoles($data->attributes['role_ids'], (int) $resource->school_id);
+                if ($resource->school_id === null) {
+                    $roles = $this->users->activePlatformRoles($data->attributes['role_ids']);
+
+                    if (! $this->policy->assignPlatformRoles($actor, $resource, $roles)) {
+                        throw new AuthorizationException('The authenticated user lacks permission for this action.');
+                    }
+                } else {
+                    $roles = $this->users->activeSchoolRoles($data->attributes['role_ids'], (int) $resource->school_id);
+                }
+
                 $resource->roles()->sync($roles->pluck('id')->all());
             }
 

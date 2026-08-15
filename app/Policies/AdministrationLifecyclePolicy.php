@@ -10,6 +10,7 @@ use App\Models\Guardian;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 final class AdministrationLifecyclePolicy
@@ -48,6 +49,27 @@ final class AdministrationLifecyclePolicy
     {
         return $user->hasSchoolPermission($this->permissionForResourceType($resourceType, 'lifecycle'), $school->id)
             || $user->hasSchoolPermission($this->permissionForResourceType($resourceType, 'manage'), $school->id);
+    }
+
+    /**
+     * @param  Collection<int, Role>  $roles
+     */
+    public function assignPlatformRoles(User $actor, User $target, Collection $roles): bool
+    {
+        if (! $target->isPlatformUser() || ! $this->allowed($actor, $target, 'manage')) {
+            return false;
+        }
+
+        $actorIsSystemAdministrator = $actor->isSystemAdministrator();
+
+        if ($actor->is($target) && ! $actorIsSystemAdministrator) {
+            return false;
+        }
+
+        $touchesSystemAdministratorRole = $roles->contains($this->isSystemAdministratorRole(...))
+            || $target->roles->contains($this->isSystemAdministratorRole(...));
+
+        return ! $touchesSystemAdministratorRole || $actorIsSystemAdministrator;
     }
 
     private function allowed(User $user, Model $resource, string $action): bool
@@ -89,5 +111,13 @@ final class AdministrationLifecyclePolicy
             'guardians' => "guardians.$action",
             default => "unknown.$action",
         };
+    }
+
+    private function isSystemAdministratorRole(Role $role): bool
+    {
+        return $role->name === 'System Administrator'
+            && $role->scope === 'platform'
+            && $role->school_id === null
+            && $role->status === 'active';
     }
 }
