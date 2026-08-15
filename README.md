@@ -188,4 +188,6 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.test.yml ex
 The Compose stack provides PHP 8.3 with `pdo_mysql`, a main MySQL container
 published on `3306`, and a dedicated test MySQL container published on `3308`.
 PHPUnit uses `.env.testing`, which points to the `dbmysql_test` service on the
-container network.
+container network. It also provides Mailpit for local email capture. Its SMTP
+server is available on port `1025`, and captured messages can be viewed at
+`http://localhost:8025`.
