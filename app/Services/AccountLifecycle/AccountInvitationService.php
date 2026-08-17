@@ -8,6 +8,7 @@ use App\DTOs\AccountLifecycle\CreateAccountInvitationData;
 use App\DTOs\TenantContext;
 use App\Exceptions\ConflictException;
 use App\Exceptions\InactiveRecordException;
+use App\Exceptions\InvitationDeliveryException;
 use App\Exceptions\PermissionDeniedException;
 use App\Exceptions\TenantContextException;
 use App\Models\AccountInvitation;
@@ -26,7 +27,8 @@ final class AccountInvitationService
         private readonly LifecycleTokenService $tokens,
         private readonly AccountLifecyclePolicy $policy,
         private readonly AccountLifecycleAuditService $audit,
-        private readonly EmailDeliveryRequestMetadataService $delivery,
+        private readonly EmailDeliveryRequestMetadataService $deliveryMetadata,
+        private readonly AccountInvitationDeliveryService $delivery,
     ) {}
 
     public function create(User $actor, TenantContext $context, CreateAccountInvitationData $data, ?string $sourceIp = null): AccountInvitation
@@ -39,7 +41,7 @@ final class AccountInvitationService
             throw ValidationException::withMessages(['role_ids' => ['All roles must be active and compatible with the invitation scope.']]);
         }
 
-        return DB::transaction(function () use ($actor, $data, $school, $roles, $sourceIp): AccountInvitation {
+        [$invitation, $user, $plainToken, $metadataSummary] = DB::transaction(function () use ($actor, $data, $school, $roles, $sourceIp): array {
             $user = $this->repository->findUserByEmailIncludingTrashed($data->email, $school?->id);
 
             if ($user === null) {
@@ -99,7 +101,7 @@ final class AccountInvitationService
                     'superseded_at' => now(),
                 ]);
 
-            [, $tokenHash] = $this->tokens->issue();
+            [$plainToken, $tokenHash] = $this->tokens->issue();
 
             $invitation = AccountInvitation::query()->create([
                 'target_user_id' => $user->id,
@@ -111,15 +113,44 @@ final class AccountInvitationService
                 'expires_at' => now()->addDays(7),
                 'send_count' => $recentSends + 1,
                 'send_window_started_at' => now(),
-                'delivery_requested_at' => now(),
-                'delivery_channel' => 'email',
-                'email_delivery_metadata_summary' => $this->delivery->summarize($user, $data->deliveryMetadata + ['purpose' => 'account_invitation']),
+                'delivery_requested_at' => null,
+                'delivery_channel' => null,
+                'email_delivery_metadata_summary' => null,
             ]);
 
-            $this->audit->record('account_invitation_created', 'success', $user, $actor, $sourceIp);
+            $metadataSummary = $this->deliveryMetadata->summarize(
+                $user,
+                $data->deliveryMetadata + ['purpose' => 'account_invitation'],
+            );
 
-            return $invitation->load(['targetUser.school', 'school']);
+            return [$invitation, $user, $plainToken, $metadataSummary];
         });
+
+        try {
+            $this->delivery->send($user, $plainToken, $invitation->expires_at);
+        } catch (InvitationDeliveryException $exception) {
+            $this->audit->record(
+                'account_invitation_delivery_failed',
+                'failure',
+                $user,
+                $actor,
+                $sourceIp,
+            );
+
+            throw $exception;
+        } finally {
+            unset($plainToken);
+        }
+
+        $invitation->forceFill([
+            'delivery_requested_at' => now(),
+            'delivery_channel' => 'email',
+            'email_delivery_metadata_summary' => $metadataSummary,
+        ])->save();
+
+        $this->audit->record('account_invitation_created', 'success', $user, $actor, $sourceIp);
+
+        return $invitation->refresh()->load(['targetUser.school', 'school']);
     }
 
     public function resend(User $actor, TenantContext $context, string $plainToken, ?string $sourceIp = null): AccountInvitation

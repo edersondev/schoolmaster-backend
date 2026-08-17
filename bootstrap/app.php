@@ -3,6 +3,7 @@
 use App\Exceptions\AuthLockoutException;
 use App\Exceptions\ConflictException;
 use App\Exceptions\InactiveRecordException;
+use App\Exceptions\InvitationDeliveryException;
 use App\Exceptions\OutputExpiredException;
 use App\Exceptions\PermissionDeniedException;
 use App\Exceptions\TenantContextException;
@@ -102,6 +103,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (InactiveRecordException $exception) {
             return ApiResponse::inactiveRecord($exception->getMessage());
+        });
+
+        $exceptions->render(function (InvitationDeliveryException $exception) {
+            return ApiResponse::temporaryUnavailable($exception->getMessage());
         });
 
         $exceptions->render(function (AuthLockoutException $exception) {
