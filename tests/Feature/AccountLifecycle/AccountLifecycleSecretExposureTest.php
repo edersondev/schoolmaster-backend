@@ -38,7 +38,8 @@ final class AccountLifecycleSecretExposureTest extends TestCase
             'send_window_started_at' => now(),
         ]);
 
-        $response = $this->postJson("/api/v1/account-invitations/{$plainToken}/setup", [
+        $response = $this->postJson('/api/v1/account-invitations/setup', [
+            'invitation_token' => $plainToken,
             'password' => $plainPassword,
         ])->assertOk();
 

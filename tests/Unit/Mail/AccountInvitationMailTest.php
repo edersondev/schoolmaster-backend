@@ -15,7 +15,7 @@ final class AccountInvitationMailTest extends TestCase
         $expiresAt = Carbon::parse('2026-08-22T12:00:00Z')->toImmutable();
         $mail = new AccountInvitationMail(
             recipientName: 'Invited <script>alert(1)</script>',
-            setupUrl: 'https://app.schoolmaster.test/auth/account-invitations/plain-token/setup',
+            setupUrl: 'https://app.schoolmaster.test/auth/account-invitations/setup#token=plain-token',
             expiresAt: $expiresAt,
         );
 

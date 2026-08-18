@@ -21,9 +21,12 @@ final class AccountInvitationDeliveryService
                 setupUrl: $this->setupUrl($plainToken),
                 expiresAt: $expiresAt,
             ));
-        } catch (Throwable) {
+        } catch (InvitationDeliveryException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
             throw new InvitationDeliveryException(
                 'Invitation email could not be submitted. Try again.',
+                previous: $exception,
             );
         }
     }
@@ -48,6 +51,6 @@ final class AccountInvitationDeliveryService
             );
         }
 
-        return $origin.'/auth/account-invitations/'.rawurlencode($plainToken).'/setup';
+        return $origin.'/auth/account-invitations/setup#token='.rawurlencode($plainToken);
     }
 }

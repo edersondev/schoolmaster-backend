@@ -91,7 +91,8 @@ final class AccountInvitationSecurityTest extends TestCase
         ])->save();
 
         for ($i = 0; $i < 5; $i++) {
-            $this->postJson("/api/v1/account-invitations/{$plainToken}/setup", [
+            $this->postJson('/api/v1/account-invitations/setup', [
+                'invitation_token' => $plainToken,
                 'password' => 'valid-password-for-failure-attempts',
             ])->assertUnauthorized();
         }
@@ -154,14 +155,16 @@ final class AccountInvitationSecurityTest extends TestCase
 
         for ($i = 0; $i < 5; $i++) {
             $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
-                ->postJson('/api/v1/account-invitations/random-invalid-token/setup', [
+                ->postJson('/api/v1/account-invitations/setup', [
+                    'invitation_token' => 'random-invalid-token',
                     'password' => 'valid-password-for-setup',
                 ])
                 ->assertUnauthorized();
         }
 
         $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.10'])
-            ->postJson('/api/v1/account-invitations/known-valid-invitation-token-1234567890/setup', [
+            ->postJson('/api/v1/account-invitations/setup', [
+                'invitation_token' => 'known-valid-invitation-token-1234567890',
                 'password' => 'valid-password-for-setup',
             ])
             ->assertUnauthorized();

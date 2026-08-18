@@ -59,10 +59,8 @@ final class AccountInvitationCreationTest extends TestCase
 
         Mail::assertSent(AccountInvitationMail::class, function (AccountInvitationMail $mail) use ($invitee): bool {
             return $mail->hasTo($invitee->email)
-                && str_starts_with(
-                    $mail->setupUrl,
-                    'https://app.schoolmaster.test/auth/account-invitations/',
-                );
+                && parse_url($mail->setupUrl, PHP_URL_PATH) === '/auth/account-invitations/setup'
+                && str_starts_with((string) parse_url($mail->setupUrl, PHP_URL_FRAGMENT), 'token=');
         });
 
         $invitation = AccountInvitation::query()->sole();
@@ -132,18 +130,21 @@ final class AccountInvitationCreationTest extends TestCase
         /** @var AccountInvitationMail $mail */
         $mail = Mail::sent(AccountInvitationMail::class)->sole();
         $path = (string) parse_url($mail->setupUrl, PHP_URL_PATH);
-        $segments = explode('/', trim($path, '/'));
-        $plainToken = $segments[2] ?? '';
+        parse_str((string) parse_url($mail->setupUrl, PHP_URL_FRAGMENT), $fragment);
+        $plainToken = $fragment['token'] ?? '';
 
+        $this->assertSame('/auth/account-invitations/setup', $path);
         $this->assertNotSame('', $plainToken);
         $this->assertSame(hash('sha256', $plainToken), AccountInvitation::query()->sole()->token_hash);
 
-        $this->postJson("/api/v1/account-invitations/{$plainToken}/setup", [
+        $this->postJson('/api/v1/account-invitations/setup', [
+            'invitation_token' => $plainToken,
             'password' => 'correct-horse-battery-staple',
         ])->assertOk()
             ->assertJsonPath('data.status', 'active');
 
-        $this->postJson("/api/v1/account-invitations/{$plainToken}/setup", [
+        $this->postJson('/api/v1/account-invitations/setup', [
+            'invitation_token' => $plainToken,
             'password' => 'another-correct-horse-battery-staple',
         ])->assertUnauthorized()
             ->assertJsonPath('error.code', 'token_invalid');

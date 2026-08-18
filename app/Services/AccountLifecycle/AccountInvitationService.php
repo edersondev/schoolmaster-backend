@@ -83,6 +83,7 @@ final class AccountInvitationService
                 ->where('target_user_id', $user->id)
                 ->where('scope', $data->scope)
                 ->where('school_id', $school?->id)
+                ->whereNotNull('delivery_requested_at')
                 ->where('created_at', '>=', now()->subDay())
                 ->count();
 
@@ -90,16 +91,6 @@ final class AccountInvitationService
                 $this->audit->record('account_invitation_limited', 'failure', $user, $actor, $sourceIp);
                 throw new ConflictException('Invitation send limit has been reached for this user and scope.');
             }
-
-            AccountInvitation::query()
-                ->where('target_user_id', $user->id)
-                ->where('scope', $data->scope)
-                ->where('school_id', $school?->id)
-                ->where('status', 'pending')
-                ->update([
-                    'status' => 'superseded',
-                    'superseded_at' => now(),
-                ]);
 
             [$plainToken, $tokenHash] = $this->tokens->issue();
 
@@ -129,6 +120,8 @@ final class AccountInvitationService
         try {
             $this->delivery->send($user, $plainToken, $invitation->expires_at);
         } catch (InvitationDeliveryException $exception) {
+            $invitation->delete();
+
             $this->audit->record(
                 'account_invitation_delivery_failed',
                 'failure',
@@ -142,11 +135,24 @@ final class AccountInvitationService
             unset($plainToken);
         }
 
-        $invitation->forceFill([
-            'delivery_requested_at' => now(),
-            'delivery_channel' => 'email',
-            'email_delivery_metadata_summary' => $metadataSummary,
-        ])->save();
+        DB::transaction(function () use ($invitation, $user, $data, $school, $metadataSummary): void {
+            AccountInvitation::query()
+                ->where('target_user_id', $user->id)
+                ->where('scope', $data->scope)
+                ->where('school_id', $school?->id)
+                ->where('status', 'pending')
+                ->where('id', '!=', $invitation->getKey())
+                ->update([
+                    'status' => 'superseded',
+                    'superseded_at' => now(),
+                ]);
+
+            $invitation->forceFill([
+                'delivery_requested_at' => now(),
+                'delivery_channel' => 'email',
+                'email_delivery_metadata_summary' => $metadataSummary,
+            ])->save();
+        });
 
         $this->audit->record('account_invitation_created', 'success', $user, $actor, $sourceIp);
 
