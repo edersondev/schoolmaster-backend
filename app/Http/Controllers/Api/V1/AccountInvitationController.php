@@ -48,10 +48,10 @@ final class AccountInvitationController extends Controller
         return ApiResponse::success((new AccountInvitationResource($invitation))->resolve());
     }
 
-    public function complete(CompleteAccountInvitationRequest $request, string $invitationToken): JsonResponse
+    public function complete(CompleteAccountInvitationRequest $request): JsonResponse
     {
         $result = $this->passwordSetup->complete(new CompleteAccountInvitationData(
-            token: $invitationToken,
+            token: $request->validated('invitation_token'),
             password: $request->validated('password'),
         ), $request->ip());
 

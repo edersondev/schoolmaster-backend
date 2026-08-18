@@ -96,4 +96,9 @@ final class ApiResponse
     {
         return self::error('output_expired', $message, [], 410);
     }
+
+    public static function temporaryUnavailable(string $message = 'Requested operation is temporarily unavailable. Try again.'): JsonResponse
+    {
+        return self::error('temporary_unavailable', $message, [], 503);
+    }
 }

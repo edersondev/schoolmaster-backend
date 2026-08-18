@@ -20,6 +20,7 @@ final class CompleteAccountInvitationRequest extends ApiFormRequest
     public function rules(): array
     {
         return [
+            'invitation_token' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:12', 'max:128'],
         ];
     }

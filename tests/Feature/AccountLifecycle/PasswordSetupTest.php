@@ -42,7 +42,8 @@ final class PasswordSetupTest extends TestCase
             'expires_at' => now()->addDays(7),
         ]);
 
-        $this->postJson("/api/v1/account-invitations/{$plainToken}/setup", [
+        $this->postJson('/api/v1/account-invitations/setup', [
+            'invitation_token' => $plainToken,
             'password' => 'correct-horse-battery-staple',
         ])->assertOk()
             ->assertJsonPath('data.status', 'active');
@@ -72,7 +73,8 @@ final class PasswordSetupTest extends TestCase
             'expires_at' => now()->addDays(7),
         ]);
 
-        $this->postJson('/api/v1/account-invitations/inactive-account-token-1234567890/setup', [
+        $this->postJson('/api/v1/account-invitations/setup', [
+            'invitation_token' => 'inactive-account-token-1234567890',
             'password' => 'correct-horse-battery-staple',
         ])->assertConflict();
     }

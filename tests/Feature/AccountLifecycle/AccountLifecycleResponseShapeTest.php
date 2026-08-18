@@ -80,7 +80,8 @@ final class AccountLifecycleResponseShapeTest extends TestCase
             ->assertConflict()
             ->assertJsonPath('error.code', 'conflict');
 
-        $this->postJson('/api/v1/account-invitations/not-a-real-token/setup', [
+        $this->postJson('/api/v1/account-invitations/setup', [
+            'invitation_token' => 'not-a-real-token',
             'password' => 'new-secure-password-123',
         ])
             ->assertUnauthorized()
