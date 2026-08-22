@@ -105,12 +105,56 @@ final class UserDetailUpdateTest extends TestCase
             ->withHeader('X-School-Id', $school->uuid)
             ->patchJson("/api/v1/users/{$user->uuid}", ['email' => 'taken@example.test'])
             ->assertUnprocessable()
-            ->assertJsonPath('error.code', 'validation_failed');
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonPath('error.details.fields.email.0', 'The email is unavailable.');
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
             'email' => 'target@example.test',
         ]);
+    }
+
+    public function test_user_update_normalizes_email_and_detects_soft_deleted_global_owner(): void
+    {
+        $school = School::factory()->create();
+        $otherSchool = School::factory()->create();
+        $admin = $this->createSchoolAdmin($school, ['users.view', 'users.manage']);
+        $user = User::factory()->create(['school_id' => $school->id, 'email' => 'target@example.test']);
+        $deletedOwner = User::factory()->create(['school_id' => $otherSchool->id, 'email' => 'retained@example.test']);
+        $deletedOwner->delete();
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->patchJson("/api/v1/users/{$user->uuid}", ['email' => ' RETAINED@EXAMPLE.TEST '])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.details.fields.email.0', 'The email is unavailable.');
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->patchJson("/api/v1/users/{$user->uuid}", ['email' => ' NEW.EMAIL@EXAMPLE.TEST '])
+            ->assertOk()
+            ->assertJsonPath('data.email', 'new.email@example.test');
+
+        $this->assertSame('new.email@example.test', $user->refresh()->email);
+    }
+
+    public function test_user_update_enforces_email_length_and_does_not_rewrite_omitted_legacy_email(): void
+    {
+        $school = School::factory()->create();
+        $admin = $this->createSchoolAdmin($school, ['users.view', 'users.manage']);
+        $legacy = User::factory()->create(['school_id' => $school->id, 'email' => ' Legacy@Example.TEST ']);
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->patchJson("/api/v1/users/{$legacy->uuid}", ['full_name' => 'Legacy Renamed'])
+            ->assertOk();
+        $this->assertSame(' Legacy@Example.TEST ', $legacy->refresh()->email);
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->patchJson("/api/v1/users/{$legacy->uuid}", ['email' => $this->emailOfLength(256)])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
     }
 
     public function test_platform_user_update_accepts_only_active_platform_roles(): void
@@ -206,5 +250,12 @@ final class UserDetailUpdateTest extends TestCase
             ->assertOk();
 
         $this->assertTrue($target->refresh()->isSystemAdministrator());
+    }
+
+    private function emailOfLength(int $length): string
+    {
+        $domain = str_repeat('b', 63).'.'.str_repeat('c', 63).'.'.str_repeat('d', 58).'.'.str_repeat('e', $length - 252);
+
+        return str_repeat('a', 64).'@'.$domain;
     }
 }

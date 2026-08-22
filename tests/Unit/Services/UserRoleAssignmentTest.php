@@ -6,7 +6,6 @@ namespace Tests\Unit\Services;
 
 use App\Models\Role;
 use App\Models\School;
-use App\Services\TenantContextService;
 use App\Services\Users\UserService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -26,7 +25,7 @@ final class UserRoleAssignmentTest extends TestCase
             'name' => 'Other School Role',
         ]);
 
-        $service = new UserService(new TenantContextService);
+        $service = app(UserService::class);
 
         $this->expectException(ValidationException::class);
 

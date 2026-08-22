@@ -42,7 +42,25 @@ final class AdministrationLifecyclePolicy
 
     public function restore(User $user, Model $resource): bool
     {
+        if ($resource instanceof User) {
+            if ($resource->school_id === null) {
+                return false;
+            }
+
+            return $user->hasSchoolPermission('users.view', $resource->school_id)
+                && $user->hasSchoolPermission('users.manage', $resource->school_id);
+        }
+
         return $this->allowed($user, $resource, 'lifecycle');
+    }
+
+    public function canDiscloseDuplicateEmailRecovery(User $actor, School $school, User $target): bool
+    {
+        return $school->isActive()
+            && $target->trashed()
+            && $target->school_id === $school->id
+            && $actor->hasSchoolPermission('users.view', $school->id)
+            && $actor->hasSchoolPermission('users.manage', $school->id);
     }
 
     public function bulk(User $user, School $school, string $resourceType): bool

@@ -5,10 +5,16 @@ declare(strict_types=1);
 namespace App\Http\Requests\AdministrationLifecycle;
 
 use App\Http\Requests\ApiFormRequest;
-use Illuminate\Validation\Rule;
 
 final class UpdateUserLifecycleRequest extends ApiFormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('email'))) {
+            $this->merge(['email' => mb_strtolower(trim($this->input('email')))]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -17,7 +23,6 @@ final class UpdateUserLifecycleRequest extends ApiFormRequest
                 'sometimes',
                 'email',
                 'max:255',
-                Rule::unique('users', 'email')->ignore((string) $this->route('userId'), 'uuid'),
             ],
             'status' => ['sometimes', 'string', 'in:active,inactive'],
             'role_ids' => ['sometimes', 'array', 'min:1'],

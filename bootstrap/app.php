@@ -6,6 +6,7 @@ use App\Exceptions\InactiveRecordException;
 use App\Exceptions\InvitationDeliveryException;
 use App\Exceptions\OutputExpiredException;
 use App\Exceptions\PermissionDeniedException;
+use App\Exceptions\RecoverableUserConflictException;
 use App\Exceptions\TenantContextException;
 use App\Exceptions\TokenRejectedException;
 use App\Http\Middleware\AuthenticateBearerToken;
@@ -81,6 +82,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (OutputExpiredException $exception) {
             return ApiResponse::outputExpired($exception->getMessage());
+        });
+
+        $exceptions->render(function (RecoverableUserConflictException $exception) {
+            return ApiResponse::recoverableUserConflict($exception->userUuid());
         });
 
         $exceptions->render(function (ConflictException $exception, Request $request) {
