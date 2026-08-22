@@ -32,7 +32,13 @@ final class BulkAdministrationLifecycleService
         }
 
         $school = $this->tenantContext->requireSchool($context);
-        $this->assertSchoolLifecyclePermission($actor, $school, "{$config['permission']}.lifecycle");
+        $this->assertSchoolLifecycleActionPermission(
+            $actor,
+            $school,
+            $data->resourceType,
+            $data->action,
+            $config['permission'],
+        );
 
         if (count($data->recordIds) !== count(array_unique($data->recordIds))) {
             throw ValidationException::withMessages(['record_ids' => ['Record identifiers must be unique.']]);

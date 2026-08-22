@@ -54,12 +54,7 @@ final class AdministrationLifecycleService
         } elseif ($config['scope'] === 'school') {
             $school = $this->tenantContext->requireSchool($context);
             $resource = $query->where('school_id', $school->id)->where('uuid', $uuid)->firstOrFail();
-            if ($resourceType === 'users' && $action === LifecycleAction::RESTORE) {
-                $this->assertSchoolLifecyclePermission($actor, $school, 'users.view');
-                $this->assertSchoolLifecyclePermission($actor, $school, 'users.manage');
-            } else {
-                $this->assertSchoolLifecyclePermission($actor, $school, "{$config['permission']}.lifecycle");
-            }
+            $this->assertSchoolLifecycleActionPermission($actor, $school, $resourceType, $action, $config['permission']);
         } else {
             $this->assertPlatformLifecyclePermission($actor, 'schools.lifecycle');
             $resource = $query->where('uuid', $uuid)->firstOrFail();
