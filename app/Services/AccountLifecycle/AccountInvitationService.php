@@ -16,9 +16,12 @@ use App\Models\School;
 use App\Models\User;
 use App\Policies\AccountLifecyclePolicy;
 use App\Repositories\AccountLifecycleRepository;
+use App\Services\Users\DuplicateEmailAuditService;
+use App\Services\Users\IdentityEmailService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 final class AccountInvitationService
 {
@@ -29,6 +32,8 @@ final class AccountInvitationService
         private readonly AccountLifecycleAuditService $audit,
         private readonly EmailDeliveryRequestMetadataService $deliveryMetadata,
         private readonly AccountInvitationDeliveryService $delivery,
+        private readonly IdentityEmailService $identityEmails,
+        private readonly DuplicateEmailAuditService $duplicateEmailAudit,
     ) {}
 
     public function create(User $actor, TenantContext $context, CreateAccountInvitationData $data, ?string $sourceIp = null): AccountInvitation
@@ -41,81 +46,95 @@ final class AccountInvitationService
             throw ValidationException::withMessages(['role_ids' => ['All roles must be active and compatible with the invitation scope.']]);
         }
 
-        [$invitation, $user, $plainToken, $metadataSummary] = DB::transaction(function () use ($actor, $data, $school, $roles, $sourceIp): array {
-            $user = $this->repository->findUserByEmailIncludingTrashed($data->email, $school?->id);
+        $canonicalEmail = $this->identityEmails->normalize($data->email);
+        $decision = $this->identityEmails->decide($canonicalEmail);
+        $user = $decision->owner;
 
-            if ($user === null) {
-                if ($data->scope !== 'platform' || User::withTrashed()->where('email', $data->email)->exists()) {
+        if ($data->scope === 'school') {
+            if ($user === null || $user->school_id !== $school?->id) {
+                throw new ConflictException('Account is not eligible for invitation.');
+            }
+        } elseif (! $decision->isAvailable() && ($user === null || $user->school_id !== null || $user->trashed() || $user->status !== 'invited')) {
+            $this->rejectUnavailableEmail($actor, $canonicalEmail, 'email_unavailable', $sourceIp);
+        }
+
+        try {
+            [$invitation, $user, $plainToken, $metadataSummary] = DB::transaction(function () use ($actor, $data, $school, $roles, $sourceIp, $canonicalEmail, $user): array {
+                if ($user === null) {
+                    $user = User::query()->create([
+                        'school_id' => null,
+                        'name' => $data->fullName,
+                        'full_name' => $data->fullName,
+                        'email' => $canonicalEmail,
+                        'password' => Str::password(32),
+                        'status' => 'invited',
+                    ]);
+                }
+
+                $this->authorize($actor, $data->scope, $school, $user);
+
+                if ($user->trashed() || $user->status === 'inactive') {
+                    throw new ConflictException('Inactive or deleted accounts cannot be invited.');
+                }
+
+                if ($user->status === 'active') {
+                    throw new ConflictException('Existing active accounts cannot be invited again.');
+                }
+
+                if ($user->status !== 'invited') {
                     throw new ConflictException('Account is not eligible for invitation.');
                 }
 
-                $user = User::query()->create([
-                    'school_id' => null,
-                    'name' => $data->fullName,
-                    'full_name' => $data->fullName,
-                    'email' => $data->email,
-                    'password' => Str::password(32),
-                    'status' => 'invited',
+                if ($user->trashed() || $user->school_id !== $school?->id) {
+                    throw new TenantContextException('Tenant context is missing, inactive, or outside permitted scope.');
+                }
+
+                $user->roles()->sync($roles->pluck('id')->all());
+
+                $recentSends = AccountInvitation::query()
+                    ->where('target_user_id', $user->id)
+                    ->where('scope', $data->scope)
+                    ->where('school_id', $school?->id)
+                    ->whereNotNull('delivery_requested_at')
+                    ->where('created_at', '>=', now()->subDay())
+                    ->count();
+
+                if ($recentSends >= 3) {
+                    $this->audit->record('account_invitation_limited', 'failure', $user, $actor, $sourceIp);
+                    throw new ConflictException('Invitation send limit has been reached for this user and scope.');
+                }
+
+                [$plainToken, $tokenHash] = $this->tokens->issue();
+
+                $invitation = AccountInvitation::query()->create([
+                    'target_user_id' => $user->id,
+                    'school_id' => $school?->id,
+                    'actor_user_id' => $actor->id,
+                    'scope' => $data->scope,
+                    'token_hash' => $tokenHash,
+                    'status' => 'pending',
+                    'expires_at' => now()->addDays(7),
+                    'send_count' => $recentSends + 1,
+                    'send_window_started_at' => now(),
+                    'delivery_requested_at' => null,
+                    'delivery_channel' => null,
+                    'email_delivery_metadata_summary' => null,
                 ]);
+
+                $metadataSummary = $this->deliveryMetadata->summarize(
+                    $user,
+                    $data->deliveryMetadata + ['purpose' => 'account_invitation'],
+                );
+
+                return [$invitation, $user, $plainToken, $metadataSummary];
+            });
+        } catch (Throwable $exception) {
+            if (! $this->identityEmails->isEmailUniqueViolation($exception)) {
+                throw $exception;
             }
 
-            $this->authorize($actor, $data->scope, $school, $user);
-
-            if ($user->trashed() || $user->status === 'inactive') {
-                throw new ConflictException('Inactive or deleted accounts cannot be invited.');
-            }
-
-            if ($user->status === 'active') {
-                throw new ConflictException('Existing active accounts cannot be invited again.');
-            }
-
-            if ($user->status !== 'invited') {
-                throw new ConflictException('Account is not eligible for invitation.');
-            }
-
-            if ($user->trashed() || $user->school_id !== $school?->id) {
-                throw new TenantContextException('Tenant context is missing, inactive, or outside permitted scope.');
-            }
-
-            $user->roles()->sync($roles->pluck('id')->all());
-
-            $recentSends = AccountInvitation::query()
-                ->where('target_user_id', $user->id)
-                ->where('scope', $data->scope)
-                ->where('school_id', $school?->id)
-                ->whereNotNull('delivery_requested_at')
-                ->where('created_at', '>=', now()->subDay())
-                ->count();
-
-            if ($recentSends >= 3) {
-                $this->audit->record('account_invitation_limited', 'failure', $user, $actor, $sourceIp);
-                throw new ConflictException('Invitation send limit has been reached for this user and scope.');
-            }
-
-            [$plainToken, $tokenHash] = $this->tokens->issue();
-
-            $invitation = AccountInvitation::query()->create([
-                'target_user_id' => $user->id,
-                'school_id' => $school?->id,
-                'actor_user_id' => $actor->id,
-                'scope' => $data->scope,
-                'token_hash' => $tokenHash,
-                'status' => 'pending',
-                'expires_at' => now()->addDays(7),
-                'send_count' => $recentSends + 1,
-                'send_window_started_at' => now(),
-                'delivery_requested_at' => null,
-                'delivery_channel' => null,
-                'email_delivery_metadata_summary' => null,
-            ]);
-
-            $metadataSummary = $this->deliveryMetadata->summarize(
-                $user,
-                $data->deliveryMetadata + ['purpose' => 'account_invitation'],
-            );
-
-            return [$invitation, $user, $plainToken, $metadataSummary];
-        });
+            $this->rejectUnavailableEmail($actor, $canonicalEmail, 'persistence_conflict', $sourceIp);
+        }
 
         try {
             $this->delivery->send($user, $plainToken, $invitation->expires_at);
@@ -212,5 +231,21 @@ final class AccountInvitationService
         }
 
         return $school;
+    }
+
+    private function rejectUnavailableEmail(User $actor, string $canonicalEmail, string $reasonCode, ?string $sourceIp): never
+    {
+        $this->duplicateEmailAudit->record(
+            $actor,
+            null,
+            'platform',
+            'account_invitation',
+            'validation_failed',
+            $canonicalEmail,
+            $reasonCode,
+            $sourceIp,
+        );
+
+        throw ValidationException::withMessages(['email' => ['The email is unavailable.']]);
     }
 }

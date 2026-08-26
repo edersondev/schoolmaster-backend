@@ -31,4 +31,37 @@ final class BulkUserLifecycleTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.affected_count', 2);
     }
+
+    public function test_bulk_user_restore_requires_view_and_manage_permissions(): void
+    {
+        $school = School::factory()->create();
+        $users = User::factory()->count(2)->create(['school_id' => $school->id, 'status' => 'active']);
+        $users->each->delete();
+        $payload = [
+            'resource_type' => 'users',
+            'action' => 'restore',
+            'record_ids' => $users->pluck('uuid')->all(),
+            'effective_at' => '2026-08-22',
+            'reason' => 'Approved retained identity recovery',
+        ];
+
+        foreach ([['users.lifecycle'], ['users.view'], ['users.manage']] as $permissions) {
+            $this->withToken($this->bearerTokenFor($this->createSchoolAdmin($school, $permissions)))
+                ->withHeader('X-School-Id', $school->uuid)
+                ->postJson('/api/v1/users/bulk-lifecycle', $payload)
+                ->assertForbidden();
+        }
+
+        $this->assertSame(2, User::onlyTrashed()->whereIn('uuid', $users->pluck('uuid'))->count());
+        $this->assertDatabaseCount('lifecycle_histories', 0);
+
+        $authorized = $this->createSchoolAdmin($school, ['users.view', 'users.manage']);
+        $this->withToken($this->bearerTokenFor($authorized))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson('/api/v1/users/bulk-lifecycle', $payload)
+            ->assertOk()
+            ->assertJsonPath('data.affected_count', 2);
+
+        $this->assertSame(2, User::query()->whereIn('uuid', $users->pluck('uuid'))->count());
+    }
 }

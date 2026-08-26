@@ -17,11 +17,13 @@ use App\Services\AuditEventService;
 use App\Services\Concerns\AuthorizesAdministrationLifecycle;
 use App\Services\Roles\RoleService;
 use App\Services\TenantContextService;
+use App\Services\Users\IdentityEmailService;
 use App\Services\Users\UserService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 final class AdministrationUpdateService
 {
@@ -37,6 +39,7 @@ final class AdministrationUpdateService
         private readonly RoleService $roles,
         private readonly AuditEventService $audit,
         private readonly SchoolAddressService $addresses,
+        private readonly IdentityEmailService $identityEmails,
     ) {}
 
     public function update(User $actor, ?TenantContext $context, string $resourceType, string $uuid, UpdateAdministrationResourceData $data, ?string $sourceIp = null): Model
@@ -62,6 +65,13 @@ final class AdministrationUpdateService
         unset($attributes['address']);
         $fromStatus = (string) ($resource->getAttribute('status') ?? '');
 
+        if ($resource instanceof User && array_key_exists('email', $attributes)) {
+            $attributes['email'] = $this->identityEmails->normalize((string) $attributes['email']);
+            if (! $this->identityEmails->decide($attributes['email'], $resource->id)->isAvailable()) {
+                throw ValidationException::withMessages(['email' => ['The email is unavailable.']]);
+            }
+        }
+
         if (
             $resource instanceof User
             && $fromStatus === 'invited'
@@ -73,66 +83,74 @@ final class AdministrationUpdateService
             ]);
         }
 
-        return DB::transaction(function () use ($resource, $resourceType, $attributes, $data, $actor, $fromStatus, $sourceIp, $addressWasSubmitted, $addressPayload): Model {
-            if ($resourceType === 'users' && array_key_exists('role_ids', $data->attributes)) {
-                /** @var User $resource */
-                if ($resource->school_id === null) {
-                    $roles = $this->users->activePlatformRoles($data->attributes['role_ids']);
+        try {
+            return DB::transaction(function () use ($resource, $resourceType, $attributes, $data, $actor, $fromStatus, $sourceIp, $addressWasSubmitted, $addressPayload): Model {
+                if ($resourceType === 'users' && array_key_exists('role_ids', $data->attributes)) {
+                    /** @var User $resource */
+                    if ($resource->school_id === null) {
+                        $roles = $this->users->activePlatformRoles($data->attributes['role_ids']);
 
-                    if (! $this->policy->assignPlatformRoles($actor, $resource, $roles)) {
-                        throw new AuthorizationException('The authenticated user lacks permission for this action.');
+                        if (! $this->policy->assignPlatformRoles($actor, $resource, $roles)) {
+                            throw new AuthorizationException('The authenticated user lacks permission for this action.');
+                        }
+                    } else {
+                        $roles = $this->users->activeSchoolRoles($data->attributes['role_ids'], (int) $resource->school_id);
                     }
-                } else {
-                    $roles = $this->users->activeSchoolRoles($data->attributes['role_ids'], (int) $resource->school_id);
+
+                    $resource->roles()->sync($roles->pluck('id')->all());
                 }
 
-                $resource->roles()->sync($roles->pluck('id')->all());
-            }
-
-            if ($resourceType === 'roles' && array_key_exists('permission_ids', $data->attributes)) {
-                /** @var Role $resource */
-                $permissions = $this->roles->activePermissions($data->attributes['permission_ids'], (string) $resource->scope);
-                $resource->permissions()->sync($permissions->pluck('id')->all());
-            }
-
-            if ($resource instanceof AcademicPeriod && isset($attributes['sequence'])) {
-                $duplicate = AcademicPeriod::query()
-                    ->where('academic_year_id', $resource->academic_year_id)
-                    ->where('sequence', $attributes['sequence'])
-                    ->whereKeyNot($resource->id)
-                    ->exists();
-
-                if ($duplicate) {
-                    throw ValidationException::withMessages(['sequence' => ['The sequence must be unique within the academic year.']]);
+                if ($resourceType === 'roles' && array_key_exists('permission_ids', $data->attributes)) {
+                    /** @var Role $resource */
+                    $permissions = $this->roles->activePermissions($data->attributes['permission_ids'], (string) $resource->scope);
+                    $resource->permissions()->sync($permissions->pluck('id')->all());
                 }
+
+                if ($resource instanceof AcademicPeriod && isset($attributes['sequence'])) {
+                    $duplicate = AcademicPeriod::query()
+                        ->where('academic_year_id', $resource->academic_year_id)
+                        ->where('sequence', $attributes['sequence'])
+                        ->whereKeyNot($resource->id)
+                        ->exists();
+
+                    if ($duplicate) {
+                        throw ValidationException::withMessages(['sequence' => ['The sequence must be unique within the academic year.']]);
+                    }
+                }
+
+                $this->assertStatusTransitionAllowed($resource, $attributes);
+
+                $resource->fill($attributes);
+                $resource->save();
+
+                if ($resource instanceof School && $addressWasSubmitted) {
+                    $this->addresses->applySubmittedAddress($resource, ['address' => $addressPayload]);
+                }
+
+                $this->history->record(
+                    $resource,
+                    $actor,
+                    LifecycleAction::UPDATED,
+                    now()->toDateString(),
+                    'Administrative update',
+                    $fromStatus,
+                    (string) ($resource->getAttribute('status') ?? ''),
+                    ['updated_fields' => array_keys($attributes)],
+                );
+
+                if ($resource instanceof School) {
+                    $this->recordSchoolUpdateAudit($resource, $actor, $attributes, $fromStatus, $sourceIp);
+                }
+
+                return $resource->refresh()->load($this->registry->config($resourceType)['relations']);
+            });
+        } catch (Throwable $exception) {
+            if (! ($resource instanceof User) || ! $this->identityEmails->isEmailUniqueViolation($exception)) {
+                throw $exception;
             }
 
-            $this->assertStatusTransitionAllowed($resource, $attributes);
-
-            $resource->fill($attributes);
-            $resource->save();
-
-            if ($resource instanceof School && $addressWasSubmitted) {
-                $this->addresses->applySubmittedAddress($resource, ['address' => $addressPayload]);
-            }
-
-            $this->history->record(
-                $resource,
-                $actor,
-                LifecycleAction::UPDATED,
-                now()->toDateString(),
-                'Administrative update',
-                $fromStatus,
-                (string) ($resource->getAttribute('status') ?? ''),
-                ['updated_fields' => array_keys($attributes)],
-            );
-
-            if ($resource instanceof School) {
-                $this->recordSchoolUpdateAudit($resource, $actor, $attributes, $fromStatus, $sourceIp);
-            }
-
-            return $resource->refresh()->load($this->registry->config($resourceType)['relations']);
-        });
+            throw ValidationException::withMessages(['email' => ['The email is unavailable.']]);
+        }
     }
 
     /**

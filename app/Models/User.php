@@ -20,7 +20,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
 #[Fillable(['uuid', 'school_id', 'name', 'full_name', 'email', 'password', 'status'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'identity_email_key'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */

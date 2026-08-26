@@ -6,8 +6,11 @@ namespace App\Services\Users;
 
 use App\DTOs\TenantContext;
 use App\DTOs\Users\CreateUserData;
+use App\Exceptions\RecoverableUserConflictException;
 use App\Models\Role;
+use App\Models\School;
 use App\Models\User;
+use App\Policies\AdministrationLifecyclePolicy;
 use App\Services\Concerns\AuthorizesSchoolAdministration;
 use App\Services\Concerns\ValidatesListQuery;
 use App\Services\TenantContextService;
@@ -17,13 +20,19 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 final class UserService
 {
     use AuthorizesSchoolAdministration;
     use ValidatesListQuery;
 
-    public function __construct(private readonly TenantContextService $tenantContext) {}
+    public function __construct(
+        private readonly TenantContextService $tenantContext,
+        private readonly IdentityEmailService $identityEmails,
+        private readonly AdministrationLifecyclePolicy $lifecyclePolicy,
+        private readonly DuplicateEmailAuditService $duplicateEmailAudit,
+    ) {}
 
     public function list(User $actor, TenantContext $context, array $query): LengthAwarePaginator
     {
@@ -53,7 +62,7 @@ final class UserService
             ->paginate((int) ($filters['per_page'] ?? 25));
     }
 
-    public function create(User $actor, TenantContext $context, CreateUserData $data): User
+    public function create(User $actor, TenantContext $context, CreateUserData $data, ?string $sourceIp = null): User
     {
         $school = $this->tenantContext->requireSchool($context);
         $this->assertSchoolPermission($actor, $school, 'users.manage');
@@ -62,25 +71,51 @@ final class UserService
             throw ValidationException::withMessages(['school_id' => ['The school_id must match the resolved tenant context.']]);
         }
 
-        if (User::query()->where('email', $data->email)->exists()) {
-            throw ValidationException::withMessages(['email' => ['The email has already been taken.']]);
+        $roles = $this->activeSchoolRoles($data->roleIds, $school->id);
+        $canonicalEmail = $this->identityEmails->normalize($data->email);
+        $decision = $this->identityEmails->decide($canonicalEmail);
+
+        if (! $decision->isAvailable()) {
+            if ($decision->owner !== null && $this->lifecyclePolicy->canDiscloseDuplicateEmailRecovery($actor, $school, $decision->owner)) {
+                $this->duplicateEmailAudit->record(
+                    $actor,
+                    $school,
+                    'school',
+                    'direct_user_creation',
+                    'recoverable_user_conflict',
+                    $canonicalEmail,
+                    'recoverable_user_conflict',
+                    $sourceIp,
+                    $decision->owner,
+                );
+
+                throw new RecoverableUserConflictException($decision->owner->uuid);
+            }
+
+            $this->rejectUnavailableEmail($actor, $school, $canonicalEmail, 'email_unavailable', $sourceIp);
         }
 
-        $roles = $this->activeSchoolRoles($data->roleIds, $school->id);
+        try {
+            return DB::transaction(function () use ($data, $school, $roles, $canonicalEmail): User {
+                $user = User::query()->create([
+                    'school_id' => $school->id,
+                    'name' => $data->fullName,
+                    'full_name' => $data->fullName,
+                    'email' => $canonicalEmail,
+                    'password' => Str::password(32),
+                    'status' => $data->accountSetupMode === 'invitation' ? 'invited' : 'active',
+                ]);
+                $user->roles()->sync($roles->pluck('id')->all());
 
-        return DB::transaction(function () use ($data, $school, $roles): User {
-            $user = User::query()->create([
-                'school_id' => $school->id,
-                'name' => $data->fullName,
-                'full_name' => $data->fullName,
-                'email' => $data->email,
-                'password' => Str::password(32),
-                'status' => $data->accountSetupMode === 'invitation' ? 'invited' : 'active',
-            ]);
-            $user->roles()->sync($roles->pluck('id')->all());
+                return $user->load(['roles.permissions', 'roles.school', 'school']);
+            });
+        } catch (Throwable $exception) {
+            if (! $this->identityEmails->isEmailUniqueViolation($exception)) {
+                throw $exception;
+            }
 
-            return $user->load(['roles.permissions', 'roles.school', 'school']);
-        });
+            $this->rejectUnavailableEmail($actor, $school, $canonicalEmail, 'persistence_conflict', $sourceIp);
+        }
     }
 
     /**
@@ -137,5 +172,21 @@ final class UserService
         }
 
         $query->orderBy('id');
+    }
+
+    private function rejectUnavailableEmail(User $actor, School $school, string $canonicalEmail, string $reasonCode, ?string $sourceIp): never
+    {
+        $this->duplicateEmailAudit->record(
+            $actor,
+            $school,
+            'school',
+            'direct_user_creation',
+            'validation_failed',
+            $canonicalEmail,
+            $reasonCode,
+            $sourceIp,
+        );
+
+        throw ValidationException::withMessages(['email' => ['The email is unavailable.']]);
     }
 }

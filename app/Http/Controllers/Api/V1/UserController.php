@@ -34,6 +34,7 @@ final class UserController extends Controller
             $request->attributes->get('auth_user'),
             $request->attributes->get('tenant_context'),
             CreateUserData::fromArray($request->validated()),
+            $request->ip(),
         );
 
         return ApiResponse::success((new UserResource($user))->resolve(), status: 201);

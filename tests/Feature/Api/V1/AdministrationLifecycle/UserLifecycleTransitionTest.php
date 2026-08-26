@@ -56,7 +56,7 @@ final class UserLifecycleTransitionTest extends TestCase
         ]);
     }
 
-    public function test_platform_admin_can_apply_all_user_lifecycle_transitions_without_school_context(): void
+    public function test_platform_admin_can_apply_user_lifecycle_except_restore_without_school_context(): void
     {
         $admin = $this->createPlatformUser(['schools.manage']);
         $user = User::factory()->create(['school_id' => null, 'status' => 'active']);
@@ -84,10 +84,32 @@ final class UserLifecycleTransitionTest extends TestCase
 
         $this->withToken($token)
             ->postJson("/api/v1/users/{$user->uuid}/restore", $payload)
+            ->assertForbidden();
+
+        $this->assertSoftDeleted('users', ['id' => $user->id]);
+        $this->assertDatabaseCount('lifecycle_histories', 3);
+    }
+
+    public function test_school_user_restore_requires_view_and_manage_permissions(): void
+    {
+        $school = School::factory()->create();
+        $target = User::factory()->create(['school_id' => $school->id]);
+        $target->delete();
+        $payload = ['effective_at' => now()->toDateString(), 'reason' => 'Approved recovery'];
+
+        foreach ([['users.view'], ['users.manage']] as $permissions) {
+            $this->withToken($this->bearerTokenFor($this->createSchoolAdmin($school, $permissions)))
+                ->withHeader('X-School-Id', $school->uuid)
+                ->postJson("/api/v1/users/{$target->uuid}/restore", $payload)
+                ->assertForbidden();
+        }
+
+        $this->withToken($this->bearerTokenFor($this->createSchoolAdmin($school, ['users.view', 'users.manage'])))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson("/api/v1/users/{$target->uuid}/restore", $payload)
             ->assertOk();
 
-        $this->assertNotSoftDeleted('users', ['id' => $user->id]);
-        $this->assertDatabaseCount('lifecycle_histories', 4);
+        $this->assertNotSoftDeleted('users', ['id' => $target->id]);
     }
 
     public function test_platform_mode_does_not_transition_school_owned_user(): void

@@ -71,6 +71,16 @@ final class ApiResponse
         return self::error('inactive_record', $message, [], 409);
     }
 
+    public static function recoverableUserConflict(string $userUuid): JsonResponse
+    {
+        return self::error(
+            'recoverable_user_conflict',
+            'A retained user can be restored.',
+            ['user_id' => $userUuid, 'recommended_action' => 'restore'],
+            409,
+        );
+    }
+
     public static function lockout(int $retryAfterSeconds): JsonResponse
     {
         return self::error(

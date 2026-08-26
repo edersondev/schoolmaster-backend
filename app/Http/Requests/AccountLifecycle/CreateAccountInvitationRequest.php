@@ -8,6 +8,13 @@ use App\Http\Requests\ApiFormRequest;
 
 final class CreateAccountInvitationRequest extends ApiFormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('email'))) {
+            $this->merge(['email' => mb_strtolower(trim($this->input('email')))]);
+        }
+    }
+
     public function rules(): array
     {
         return [

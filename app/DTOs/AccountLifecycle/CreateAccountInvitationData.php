@@ -24,7 +24,7 @@ final readonly class CreateAccountInvitationData
         return new self(
             scope: $data['scope'],
             fullName: $data['full_name'],
-            email: strtolower($data['email']),
+            email: mb_strtolower(trim($data['email'])),
             roleIds: $data['role_ids'],
             schoolId: $data['school_id'] ?? null,
             deliveryMetadata: $data['delivery_metadata'] ?? [],

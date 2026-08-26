@@ -21,7 +21,7 @@ final readonly class CreateUserData
     {
         return new self(
             fullName: $data['full_name'],
-            email: $data['email'],
+            email: mb_strtolower(trim($data['email'])),
             roleIds: $data['role_ids'],
             schoolId: $data['school_id'] ?? null,
             accountSetupMode: $data['account_setup_mode'] ?? 'active',

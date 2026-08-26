@@ -7,15 +7,16 @@ namespace App\Services\AdministrationLifecycle;
 use App\DTOs\AdministrationLifecycle\ApplyLifecycleTransitionData;
 use App\DTOs\TenantContext;
 use App\Models\User;
+use App\Services\AccountLifecycle\BearerTokenRevocationService;
 use App\Services\AdministrationLifecycle\DependencyChecks\AcademicPeriodLifecycleDependencyCheck;
 use App\Services\AdministrationLifecycle\DependencyChecks\AcademicYearLifecycleDependencyCheck;
 use App\Services\AdministrationLifecycle\DependencyChecks\GuardianLifecycleDependencyCheck;
 use App\Services\AdministrationLifecycle\DependencyChecks\RoleLifecycleDependencyCheck;
 use App\Services\AdministrationLifecycle\DependencyChecks\SchoolLifecycleDependencyCheck;
 use App\Services\AdministrationLifecycle\DependencyChecks\UserLifecycleDependencyCheck;
-use App\Services\AccountLifecycle\BearerTokenRevocationService;
 use App\Services\Concerns\AuthorizesAdministrationLifecycle;
 use App\Services\TenantContextService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -44,12 +45,16 @@ final class AdministrationLifecycleService
         $platformMode = ($config['platform_mode'] ?? false) && $context?->school === null;
 
         if ($platformMode) {
+            if ($resourceType === 'users' && $action === LifecycleAction::RESTORE) {
+                throw new AuthorizationException('Platform user restoration is not supported.');
+            }
+
             $this->assertPlatformLifecyclePermission($actor, 'schools.manage');
             $resource = $query->whereNull('school_id')->where('uuid', $uuid)->firstOrFail();
         } elseif ($config['scope'] === 'school') {
             $school = $this->tenantContext->requireSchool($context);
             $resource = $query->where('school_id', $school->id)->where('uuid', $uuid)->firstOrFail();
-            $this->assertSchoolLifecyclePermission($actor, $school, "{$config['permission']}.lifecycle");
+            $this->assertSchoolLifecycleActionPermission($actor, $school, $resourceType, $action, $config['permission']);
         } else {
             $this->assertPlatformLifecyclePermission($actor, 'schools.lifecycle');
             $resource = $query->where('uuid', $uuid)->firstOrFail();
