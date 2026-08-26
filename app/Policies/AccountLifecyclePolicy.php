@@ -9,6 +9,11 @@ use App\Models\User;
 
 final class AccountLifecyclePolicy
 {
+    public function deliverPassword(User $actor, string $scope, ?School $school = null, ?User $target = null): bool
+    {
+        return $this->manage($actor, $scope, $school, $target);
+    }
+
     public function manage(User $actor, string $scope, ?School $school = null, ?User $target = null): bool
     {
         if (! $actor->isActive() || ($target !== null && $actor->is($target))) {

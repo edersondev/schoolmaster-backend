@@ -93,4 +93,31 @@ final class AccountLifecycleTenantIsolationTest extends TestCase
                 ->assertJsonPath('error.code', 'not_found');
         }
     }
+
+    public function test_password_delivery_returns_tenant_mismatch_for_missing_inactive_or_mismatched_context(): void
+    {
+        $school = School::factory()->create();
+        $inactiveSchool = School::factory()->create(['status' => School::STATUS_INACTIVE]);
+        $otherSchool = School::factory()->create();
+        $target = User::factory()->create(['school_id' => $school->id]);
+        $schoolAdmin = $this->createSchoolAdmin($school, ['account_lifecycle.manage']);
+        $master = $this->createSystemAdministrator();
+
+        $this->withToken($this->bearerTokenFor($schoolAdmin))
+            ->postJson("/api/v1/users/{$target->uuid}/password-delivery")
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'tenant_mismatch');
+
+        $this->withToken($this->bearerTokenFor($schoolAdmin))
+            ->withHeader('X-School-Id', $otherSchool->uuid)
+            ->postJson("/api/v1/users/{$target->uuid}/password-delivery")
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'tenant_mismatch');
+
+        $this->withToken($this->bearerTokenFor($master))
+            ->withHeader('X-School-Id', $inactiveSchool->uuid)
+            ->postJson("/api/v1/users/{$target->uuid}/password-delivery")
+            ->assertForbidden()
+            ->assertJsonPath('error.code', 'tenant_mismatch');
+    }
 }

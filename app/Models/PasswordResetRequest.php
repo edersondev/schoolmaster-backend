@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -71,5 +72,12 @@ final class PasswordResetRequest extends Model
     public function isPending(): bool
     {
         return $this->status === 'pending' && $this->expires_at !== null && $this->expires_at->isFuture();
+    }
+
+    public function scopeAcceptedAdministratorDelivery(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('delivery_requested_at')
+            ->where('email_delivery_metadata_summary->source', 'administrator');
     }
 }

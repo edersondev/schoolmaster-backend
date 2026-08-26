@@ -46,6 +46,24 @@ final class AccountLifecycleRepository
             ->first();
     }
 
+    public function findPlatformUserByUuidIncludingDeleted(string $uuid): ?User
+    {
+        return User::withTrashed()
+            ->with(['school', 'roles.permissions'])
+            ->whereNull('school_id')
+            ->where('uuid', $uuid)
+            ->first();
+    }
+
+    public function findSchoolUserByUuidIncludingDeleted(string $uuid, int $schoolId): ?User
+    {
+        return User::withTrashed()
+            ->with(['school', 'roles.permissions'])
+            ->where('school_id', $schoolId)
+            ->where('uuid', $uuid)
+            ->first();
+    }
+
     public function findUserByEmail(string $email, ?int $schoolId): ?User
     {
         return User::query()
@@ -109,5 +127,31 @@ final class AccountLifecycleRepository
             })
             ->latest()
             ->first();
+    }
+
+    public function hasActiveResetSuppressionForUser(User $user): bool
+    {
+        return PasswordResetRequest::query()
+            ->where('target_user_id', $user->id)
+            ->where('suppressed_until', '>', now())
+            ->exists();
+    }
+
+    public function acceptedPasswordDeliveryCount(User $user): int
+    {
+        return PasswordResetRequest::query()
+            ->acceptedAdministratorDelivery()
+            ->where('target_user_id', $user->id)
+            ->where('school_id', $user->school_id)
+            ->where('created_at', '>=', now()->subDay())
+            ->count();
+    }
+
+    public function hasCompletedPasswordReset(User $user): bool
+    {
+        return PasswordResetRequest::query()
+            ->where('target_user_id', $user->id)
+            ->where('status', 'completed')
+            ->exists();
     }
 }

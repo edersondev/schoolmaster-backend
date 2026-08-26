@@ -8,10 +8,10 @@ use App\DTOs\AccountLifecycle\CompletePasswordResetData;
 use App\DTOs\AccountLifecycle\RequestPasswordResetData;
 use App\Exceptions\ConflictException;
 use App\Exceptions\TokenRejectedException;
-use App\Services\LoginAttemptControlService;
 use App\Models\PasswordResetRequest;
 use App\Models\User;
 use App\Repositories\AccountLifecycleRepository;
+use App\Services\LoginAttemptControlService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -162,6 +162,12 @@ final class PasswordResetService
                 'action' => 'password_reset_completed',
             ];
         });
+    }
+
+    public function isIssuanceSuppressed(User $user, ?string $sourceIp = null): bool
+    {
+        return ($sourceIp !== null && $this->attempts->isLockedKey(self::TOKEN_IP_ATTEMPT_KEY, $sourceIp))
+            || $this->repository->hasActiveResetSuppressionForUser($user);
     }
 
     private function eligibleUser(string $email, ?int $schoolId): ?User
