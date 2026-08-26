@@ -114,14 +114,6 @@ Do not start with implementation when the specs or OpenAPI contract are missing 
 - Do not create product UI artifacts in this repository.
 - Prefer maintainable Laravel-native patterns over custom frameworks or unnecessary abstractions.
 
-<!-- SPECKIT START -->
-For additional implementation context, read the current plan in the `/specs`
-directory before making substantial changes.
-
-Current active feature implementation context:
-`specs/specs/019-centralize-addresses/plan.md`.
-<!-- SPECKIT END -->
-
 ===
 
 <laravel-boost-guidelines>
