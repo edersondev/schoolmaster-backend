@@ -50,6 +50,6 @@ final class PasswordDeliveryMailService
             throw new PasswordDeliveryException('Password email could not be submitted. Try again.');
         }
 
-        return $origin.'/auth/password-resets/'.rawurlencode($plainToken);
+        return $origin.'/auth/password-resets#token='.rawurlencode($plainToken);
     }
 }

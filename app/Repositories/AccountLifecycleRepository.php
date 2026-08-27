@@ -64,6 +64,16 @@ final class AccountLifecycleRepository
             ->first();
     }
 
+    public function lockUserForPasswordDelivery(User $user): User
+    {
+        return User::withTrashed()
+            ->with(['school', 'roles.permissions'])
+            ->whereKey($user->getKey())
+            ->where('school_id', $user->school_id)
+            ->lockForUpdate()
+            ->firstOrFail();
+    }
+
     public function findUserByEmail(string $email, ?int $schoolId): ?User
     {
         return User::query()

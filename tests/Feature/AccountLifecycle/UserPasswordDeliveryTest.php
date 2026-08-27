@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 use Tests\TestCase;
@@ -65,10 +66,15 @@ final class UserPasswordDeliveryTest extends TestCase
 
         /** @var PasswordDeliveryMail $mail */
         $mail = Mail::sent(PasswordDeliveryMail::class)->sole();
-        $plainToken = basename((string) parse_url($mail->passwordUrl, PHP_URL_PATH));
+        $path = (string) parse_url($mail->passwordUrl, PHP_URL_PATH);
+        parse_str((string) parse_url($mail->passwordUrl, PHP_URL_FRAGMENT), $fragment);
+        $plainToken = $fragment['token'] ?? '';
 
         $this->assertTrue($mail->hasTo('active-recipient@example.test'));
+        $this->assertSame('/auth/password-resets', $path);
+        $this->assertNull(parse_url($mail->passwordUrl, PHP_URL_QUERY));
         $this->assertNotSame('', $plainToken);
+        $this->assertStringNotContainsString($plainToken, $path);
         $this->assertSame(hash('sha256', $plainToken), PasswordResetRequest::query()->sole()->token_hash);
         $this->assertStringNotContainsString($plainToken, $response->getContent());
         $this->assertStringNotContainsString('active-recipient@example.test', $response->getContent());
@@ -189,6 +195,57 @@ final class UserPasswordDeliveryTest extends TestCase
 
         Mail::assertSentCount(3);
         $this->assertSame(3, PasswordResetRequest::query()->whereNotNull('delivery_requested_at')->count());
+    }
+
+    public function test_delivery_locks_the_target_before_counting_and_reserving_a_token(): void
+    {
+        [$school, $admin, $target] = $this->schoolActors();
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson("/api/v1/users/{$target->uuid}/password-delivery")
+            ->assertCreated();
+
+        $queries = array_map(
+            static fn (array $query): string => strtolower($query['query']),
+            DB::getQueryLog(),
+        );
+        DB::disableQueryLog();
+        $lockIndex = array_search(
+            true,
+            array_map(
+                static fn (string $query): bool => str_contains($query, 'from `users`')
+                    && str_contains($query, 'for update'),
+                $queries,
+            ),
+            true,
+        );
+        $countIndex = array_search(
+            true,
+            array_map(
+                static fn (string $query): bool => str_contains($query, 'select count(*)')
+                    && str_contains($query, 'password_reset_requests'),
+                $queries,
+            ),
+            true,
+        );
+        $reservationIndex = array_search(
+            true,
+            array_map(
+                static fn (string $query): bool => str_starts_with($query, 'insert into `password_reset_requests`'),
+                $queries,
+            ),
+            true,
+        );
+
+        $querySummary = implode("\n", $queries);
+        $this->assertNotFalse($lockIndex, $querySummary);
+        $this->assertNotFalse($countIndex, $querySummary);
+        $this->assertNotFalse($reservationIndex, $querySummary);
+        $this->assertTrue($lockIndex < $countIndex);
+        $this->assertTrue($countIndex < $reservationIndex);
     }
 
     public function test_mail_failure_creates_no_usable_token_preserves_prior_link_and_allows_retry(): void

@@ -70,7 +70,8 @@ final class PasswordResetCompletionTest extends TestCase
 
         /** @var PasswordDeliveryMail $mail */
         $mail = Mail::sent(PasswordDeliveryMail::class)->sole();
-        $plainToken = basename((string) parse_url($mail->passwordUrl, PHP_URL_PATH));
+        parse_str((string) parse_url($mail->passwordUrl, PHP_URL_FRAGMENT), $fragment);
+        $plainToken = $fragment['token'] ?? '';
 
         $this->postJson('/api/v1/auth/password-resets', [
             'token' => $plainToken,

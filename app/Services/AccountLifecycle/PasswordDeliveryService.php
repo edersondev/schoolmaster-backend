@@ -58,51 +58,64 @@ final class PasswordDeliveryService
         $this->authorize($actor, $scope, $school, $target);
         $this->assertEligible($target);
 
-        $recentDeliveries = $this->repository->acceptedPasswordDeliveryCount($target);
-
-        if ($recentDeliveries >= self::DELIVERY_LIMIT || $this->passwordResets->isIssuanceSuppressed($target, $sourceIp)) {
-            $this->audit->recordPasswordDelivery('password_delivery_limited', 'failure', $target, $actor, $sourceIp);
-            throw new PasswordDeliveryRateLimitException('Password delivery is temporarily limited. Try again later.');
-        }
-
-        $purpose = $this->repository->hasCompletedPasswordReset($target)
-            ? 'password_reset'
-            : 'password_setup';
-        [$candidate, $plainToken, $metadata] = $this->candidate(
-            $target,
-            $purpose,
-            $sourceIp,
-            $recentDeliveries + 1,
-        );
-
         try {
-            $this->mail->send($target, $plainToken, $candidate->expires_at, $purpose);
-        } catch (PasswordDeliveryException $exception) {
-            $candidate->delete();
-            $this->audit->recordPasswordDelivery('password_delivery_failed', 'failure', $target, $actor, $sourceIp);
+            [$delivery, $purpose] = DB::transaction(function () use ($target, $sourceIp): array {
+                $lockedTarget = $this->repository->lockUserForPasswordDelivery($target);
+                $this->assertEligible($lockedTarget);
+                $recentDeliveries = $this->repository->acceptedPasswordDeliveryCount($lockedTarget);
 
+                if (
+                    $recentDeliveries >= self::DELIVERY_LIMIT
+                    || $this->passwordResets->isIssuanceSuppressed($lockedTarget, $sourceIp)
+                ) {
+                    throw new PasswordDeliveryRateLimitException(
+                        'Password delivery is temporarily limited. Try again later.',
+                    );
+                }
+
+                $purpose = $this->repository->hasCompletedPasswordReset($lockedTarget)
+                    ? 'password_reset'
+                    : 'password_setup';
+                [$candidate, $plainToken, $metadata] = $this->candidate(
+                    $lockedTarget,
+                    $purpose,
+                    $sourceIp,
+                    $recentDeliveries + 1,
+                );
+
+                try {
+                    $this->mail->send($lockedTarget, $plainToken, $candidate->expires_at, $purpose);
+                } finally {
+                    unset($plainToken);
+                }
+
+                PasswordResetRequest::query()
+                    ->where('target_user_id', $lockedTarget->id)
+                    ->where('school_id', $lockedTarget->school_id)
+                    ->where('status', 'pending')
+                    ->where('id', '!=', $candidate->getKey())
+                    ->update([
+                        'status' => 'superseded',
+                        'superseded_at' => now(),
+                    ]);
+
+                $candidate->forceFill([
+                    'status' => 'pending',
+                    'superseded_at' => null,
+                    'delivery_requested_at' => now(),
+                    'delivery_channel' => 'email',
+                    'email_delivery_metadata_summary' => $metadata,
+                ])->save();
+
+                return [$candidate->refresh(), $purpose];
+            }, 3);
+        } catch (PasswordDeliveryRateLimitException $exception) {
+            $this->audit->recordPasswordDelivery('password_delivery_limited', 'failure', $target, $actor, $sourceIp);
             throw $exception;
-        } finally {
-            unset($plainToken);
+        } catch (PasswordDeliveryException $exception) {
+            $this->audit->recordPasswordDelivery('password_delivery_failed', 'failure', $target, $actor, $sourceIp);
+            throw $exception;
         }
-
-        DB::transaction(function () use ($candidate, $target, $metadata): void {
-            PasswordResetRequest::query()
-                ->where('target_user_id', $target->id)
-                ->where('school_id', $target->school_id)
-                ->where('status', 'pending')
-                ->where('id', '!=', $candidate->getKey())
-                ->update([
-                    'status' => 'superseded',
-                    'superseded_at' => now(),
-                ]);
-
-            $candidate->forceFill([
-                'delivery_requested_at' => now(),
-                'delivery_channel' => 'email',
-                'email_delivery_metadata_summary' => $metadata,
-            ])->save();
-        });
 
         $this->audit->recordPasswordDelivery(
             'password_delivery_requested',
@@ -113,7 +126,7 @@ final class PasswordDeliveryService
             $purpose,
         );
 
-        return $candidate->refresh();
+        return $delivery;
     }
 
     private function authorize(User $actor, string $scope, ?School $school, ?User $target = null): void
@@ -147,25 +160,23 @@ final class PasswordDeliveryService
         ?string $sourceIp,
         int $requestCount,
     ): array {
-        return DB::transaction(function () use ($target, $purpose, $sourceIp, $requestCount): array {
-            [$plainToken, $tokenHash] = $this->tokens->issue();
-            $candidate = PasswordResetRequest::query()->create([
-                'target_user_id' => $target->id,
-                'school_id' => $target->school_id,
-                'account_identifier_hash' => hash('sha256', strtolower($target->email).'|'.($target->school_id ?? 'platform')),
-                'request_ip_hash' => $sourceIp === null ? null : hash('sha256', $sourceIp),
-                'token_hash' => $tokenHash,
-                'status' => 'pending',
-                'expires_at' => now()->addMinutes(30),
-                'request_count' => $requestCount,
-                'request_window_started_at' => now(),
-            ]);
-            $metadata = $this->deliveryMetadata->summarize($target, [
-                'purpose' => $purpose,
-                'source' => 'administrator',
-            ]);
+        [$plainToken, $tokenHash] = $this->tokens->issue();
+        $candidate = PasswordResetRequest::query()->create([
+            'target_user_id' => $target->id,
+            'school_id' => $target->school_id,
+            'account_identifier_hash' => hash('sha256', strtolower($target->email).'|'.($target->school_id ?? 'platform')),
+            'request_ip_hash' => $sourceIp === null ? null : hash('sha256', $sourceIp),
+            'token_hash' => $tokenHash,
+            'status' => 'pending',
+            'expires_at' => now()->addMinutes(30),
+            'request_count' => $requestCount,
+            'request_window_started_at' => now(),
+        ]);
+        $metadata = $this->deliveryMetadata->summarize($target, [
+            'purpose' => $purpose,
+            'source' => 'administrator',
+        ]);
 
-            return [$candidate, $plainToken, $metadata];
-        });
+        return [$candidate, $plainToken, $metadata];
     }
 }
