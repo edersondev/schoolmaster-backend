@@ -5,17 +5,18 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1;
 
 use App\DTOs\Guardians\CreateGuardianData;
+use App\DTOs\Guardians\GuardianListFilters;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\CreateGuardianUserLinkRequest;
 use App\Http\Requests\Api\V1\CreateGuardianRequest;
+use App\Http\Requests\Api\V1\CreateGuardianUserLinkRequest;
 use App\Http\Requests\Api\V1\DeactivateGuardianUserLinkRequest;
+use App\Http\Requests\Api\V1\ListGuardianRequest;
 use App\Http\Resources\Api\V1\GuardianResource;
 use App\Http\Resources\Api\V1\GuardianUserLinkResource;
 use App\Http\Resources\ApiResponse;
 use App\Services\Guardians\GuardianService;
 use App\Services\Guardians\GuardianUserLinkService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 final class GuardianController extends Controller
 {
@@ -24,12 +25,12 @@ final class GuardianController extends Controller
         private readonly GuardianUserLinkService $userLinks,
     ) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(ListGuardianRequest $request): JsonResponse
     {
         $paginator = $this->guardians->list(
             $request->attributes->get('auth_user'),
             $request->attributes->get('tenant_context'),
-            $request->query(),
+            GuardianListFilters::fromArray($request->validated()),
         );
 
         return ApiResponse::paginated($paginator, GuardianResource::collection($paginator->items())->resolve());

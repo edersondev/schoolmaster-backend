@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\Guardian;
 use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -60,5 +61,64 @@ final class GuardianManagementTest extends TestCase
             ->assertUnprocessable();
 
         $this->assertDatabaseMissing('guardians', ['full_name' => 'Invalid Guardian']);
+    }
+
+    public function test_school_admin_can_filter_guardians_by_full_name_contact_email_and_status(): void
+    {
+        $school = School::factory()->create();
+        $otherSchool = School::factory()->create();
+        $token = $this->bearerTokenFor($this->createSchoolAdmin($school));
+
+        $matchingGuardian = Guardian::query()->create([
+            'school_id' => $school->id,
+            'full_name' => 'Maria da Silva',
+            'relationship_type' => 'parent',
+            'contact_email' => 'Maria.Guardian@Example.test',
+            'status' => 'active',
+        ]);
+
+        Guardian::query()->create([
+            'school_id' => $school->id,
+            'full_name' => 'Maria Souza',
+            'relationship_type' => 'parent',
+            'contact_email' => 'maria@example.test',
+            'status' => 'inactive',
+        ]);
+
+        Guardian::query()->create([
+            'school_id' => $otherSchool->id,
+            'full_name' => 'Maria da Silva',
+            'relationship_type' => 'parent',
+            'contact_email' => 'Maria.Guardian@Example.test',
+            'status' => 'active',
+        ]);
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/guardians?full_name=MARIA%20DA&contact_email=guardian%40example&status=active')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matchingGuardian->uuid)
+            ->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_guardian_list_rejects_invalid_or_undocumented_filters(): void
+    {
+        $school = School::factory()->create();
+        $token = $this->bearerTokenFor($this->createSchoolAdmin($school));
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/guardians?full_name='.str_repeat('a', 256).'&status=pending')
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonStructure(['error' => ['details' => ['fields' => ['full_name', 'status']]]]);
+
+        $this->withToken($token)
+            ->withHeader('X-School-Id', $school->uuid)
+            ->getJson('/api/v1/guardians?relationship_type=parent')
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed')
+            ->assertJsonStructure(['error' => ['details' => ['fields' => ['relationship_type']]]]);
     }
 }
