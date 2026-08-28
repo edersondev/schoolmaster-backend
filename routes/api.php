@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\GradeController;
 use App\Http\Controllers\Api\V1\Guardian\GuardianSelfServiceController;
 use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\LearningSetController;
+use App\Http\Controllers\Api\V1\PasswordDeliveryController;
 use App\Http\Controllers\Api\V1\PasswordResetController;
 use App\Http\Controllers\Api\V1\PermissionController;
 use App\Http\Controllers\Api\V1\Platform\PlatformSupportController;
@@ -58,6 +59,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/users/{userId}/account-lock', [AccountRecoveryController::class, 'lock'])->whereUuid('userId')->name('api.v1.users.account-lock.store');
         Route::delete('/users/{userId}/account-lock', [AccountRecoveryController::class, 'unlock'])->whereUuid('userId')->name('api.v1.users.account-lock.destroy');
         Route::post('/users/{userId}/account-reactivation', [AccountRecoveryController::class, 'recover'])->whereUuid('userId')->name('api.v1.users.account-reactivation.store');
+        Route::post('/users/{userId}/password-delivery', PasswordDeliveryController::class)->whereUuid('userId')->name('api.v1.users.password-delivery.store');
         Route::get('/address-lookups/{zipCode}', AddressLookupController::class)
             ->name('api.v1.address-lookups.show');
 

@@ -111,4 +111,9 @@ final class ApiResponse
     {
         return self::error('temporary_unavailable', $message, [], 503);
     }
+
+    public static function passwordDeliveryRateLimited(string $message = 'Password delivery is temporarily limited. Try again later.'): JsonResponse
+    {
+        return self::error('password_delivery_rate_limited', $message, [], 429);
+    }
 }

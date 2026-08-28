@@ -18,6 +18,7 @@ final class EmailDeliveryRequestMetadataService
             'requested_for_email_hash' => hash('sha256', strtolower($target->email)),
             'requested_at' => now()->toIso8601String(),
             'purpose' => $metadata['purpose'] ?? null,
+            'source' => $metadata['source'] ?? null,
         ], fn (mixed $value): bool => $value !== null);
     }
 }

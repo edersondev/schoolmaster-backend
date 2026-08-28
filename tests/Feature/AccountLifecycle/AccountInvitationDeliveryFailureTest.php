@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Tests\Feature\AccountLifecycle;
 
 use App\Exceptions\InvitationDeliveryException;
+use App\Exceptions\PasswordDeliveryException;
 use App\Mail\AccountInvitationMail;
 use App\Models\AccountInvitation;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
 use App\Services\AccountLifecycle\AccountInvitationDeliveryService;
+use App\Services\AccountLifecycle\PasswordDeliveryMailService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
@@ -130,6 +132,30 @@ final class AccountInvitationDeliveryFailureTest extends TestCase
             );
             $this->fail('Expected invitation delivery to fail.');
         } catch (InvitationDeliveryException $exception) {
+            $this->assertSame($transportException, $exception->getPrevious());
+        }
+    }
+
+    public function test_password_delivery_exception_preserves_transport_exception_as_previous(): void
+    {
+        config(['app.frontend_url' => 'https://app.schoolmaster.test']);
+        $transportException = new RuntimeException('smtp unavailable');
+        Mail::shouldReceive('to')
+            ->once()
+            ->andThrow($transportException);
+
+        try {
+            app(PasswordDeliveryMailService::class)->send(
+                new User([
+                    'email' => 'recipient@example.test',
+                    'full_name' => 'Recipient',
+                ]),
+                'plain-password-delivery-token',
+                now()->addMinutes(30),
+                'password_setup',
+            );
+            $this->fail('Expected password delivery to fail.');
+        } catch (PasswordDeliveryException $exception) {
             $this->assertSame($transportException, $exception->getPrevious());
         }
     }

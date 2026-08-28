@@ -29,4 +29,25 @@ final class AccountLifecycleAuditService
             masterAccessUsed: $actor?->isSystemAdministrator() ?? false,
         ));
     }
+
+    public function recordPasswordDelivery(
+        string $eventType,
+        string $outcome,
+        User $target,
+        User $actor,
+        ?string $sourceIp = null,
+        ?string $purpose = null,
+    ): void {
+        $this->record(
+            $eventType,
+            $outcome,
+            $target,
+            $actor,
+            $sourceIp,
+            array_filter([
+                'purpose' => $purpose,
+                'delivery_channel' => $purpose === null ? null : 'email',
+            ]),
+        );
+    }
 }

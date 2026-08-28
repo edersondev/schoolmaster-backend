@@ -5,6 +5,8 @@ use App\Exceptions\ConflictException;
 use App\Exceptions\InactiveRecordException;
 use App\Exceptions\InvitationDeliveryException;
 use App\Exceptions\OutputExpiredException;
+use App\Exceptions\PasswordDeliveryException;
+use App\Exceptions\PasswordDeliveryRateLimitException;
 use App\Exceptions\PermissionDeniedException;
 use App\Exceptions\RecoverableUserConflictException;
 use App\Exceptions\TenantContextException;
@@ -112,6 +114,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $exceptions->render(function (InvitationDeliveryException $exception) {
             return ApiResponse::temporaryUnavailable($exception->getMessage());
+        });
+
+        $exceptions->render(function (PasswordDeliveryException $exception) {
+            return ApiResponse::temporaryUnavailable($exception->getMessage());
+        });
+
+        $exceptions->render(function (PasswordDeliveryRateLimitException $exception) {
+            return ApiResponse::passwordDeliveryRateLimited($exception->getMessage());
         });
 
         $exceptions->render(function (AuthLockoutException $exception) {
