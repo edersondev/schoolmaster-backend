@@ -8,6 +8,7 @@ use App\DTOs\StudentProfiles\StudentProfileGuardianEntryData;
 use App\Models\Guardian;
 use App\Models\School;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final class GuardianAssociationValidator
@@ -61,7 +62,7 @@ final class GuardianAssociationValidator
                 continue;
             }
 
-            $key = strtolower(implode('|', [
+            $key = Str::lower(implode('|', [
                 $entry->newGuardian->fullName,
                 $entry->newGuardian->contactEmail ?? '',
                 $entry->newGuardian->contactPhone ?? '',

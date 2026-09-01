@@ -125,6 +125,36 @@ final class StudentProfileGuardianValidationTest extends TestCase
             ->assertJsonPath('error.code', 'validation_failed');
     }
 
+    public function test_duplicate_new_guardian_identity_comparison_is_utf8_case_insensitive(): void
+    {
+        $school = School::factory()->create();
+        $admin = $this->createSchoolAdmin($school, ['student_profiles.manage', 'guardians.manage']);
+
+        $this->withToken($this->bearerTokenFor($admin))
+            ->withHeader('X-School-Id', $school->uuid)
+            ->postJson('/api/v1/student-profiles', $this->payload([
+                'guardian_associations' => [
+                    [
+                        'relationship_type' => 'father',
+                        'full_name' => 'Álvaro Costa',
+                        'contact_email' => 'alvaro@example.test',
+                    ],
+                    [
+                        'relationship_type' => 'father',
+                        'full_name' => 'álvaro costa',
+                        'contact_email' => 'alvaro@example.test',
+                    ],
+                ],
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonPath('error.code', 'validation_failed');
+
+        $this->assertDatabaseMissing('guardians', [
+            'school_id' => $school->id,
+            'contact_email' => 'alvaro@example.test',
+        ]);
+    }
+
     private function payload(array $overrides = []): array
     {
         return array_replace_recursive([
