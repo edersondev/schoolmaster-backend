@@ -18,7 +18,7 @@ final class StudentProfileEnrollmentHappyPathTest extends TestCase
     public function test_student_profile_enrollment_happy_path_from_create_to_transfer(): void
     {
         $school = School::factory()->create();
-        $admin = $this->createSchoolAdmin($school, ['student_profiles.view', 'student_profiles.manage', 'student_transfers.manage']);
+        $admin = $this->createSchoolAdmin($school, ['student_profiles.view', 'student_profiles.manage', 'student_transfers.manage', 'guardians.manage']);
         $guardian = Guardian::query()->create(['school_id' => $school->id, 'full_name' => 'Guardian User', 'relationship_type' => 'parent', 'status' => 'active']);
         $token = $this->bearerTokenFor($admin);
 

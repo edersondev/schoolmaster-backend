@@ -19,7 +19,7 @@ final class StudentProfileCreateTest extends TestCase
     public function test_school_admin_can_create_student_profile_with_guardian_and_initial_history(): void
     {
         $school = School::factory()->create();
-        $admin = $this->createSchoolAdmin($school, ['student_profiles.view', 'student_profiles.manage']);
+        $admin = $this->createSchoolAdmin($school, ['student_profiles.view', 'student_profiles.manage', 'guardians.manage']);
         $guardian = Guardian::query()->create([
             'school_id' => $school->id,
             'full_name' => 'Guardian User',

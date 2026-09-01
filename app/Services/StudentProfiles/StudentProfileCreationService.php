@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Services\StudentProfiles;
 
 use App\DTOs\StudentProfiles\CreateStudentProfileData;
+use App\DTOs\StudentProfiles\StudentProfileGuardianEntryData;
 use App\Exceptions\ConflictException;
 use App\Models\AcademicYear;
 use App\Models\EnrollmentHistory;
+use App\Models\Guardian;
 use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Services\Concerns\AuthorizesStudentAdministration;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -23,14 +26,18 @@ final class StudentProfileCreationService
 
     public function create(User $actor, School $school, CreateStudentProfileData $data): StudentProfile
     {
+        $guardianEntries = $data->guardianEntries();
+
         $this->assertCanManageStudentProfiles($actor, $school);
+        $this->assertCanManageGuardiansWhenPresent($actor, $school, $guardianEntries);
         $this->assertRegistrationIsUnique($school, $data->registrationNumber);
         $user = $this->resolveUser($school, $data->userId);
         $this->assertUserProfileIsUnique($user);
         $academicYear = $this->resolveAcademicYear($school, $data->currentAcademicYearId);
-        $guardians = $this->guardians->activeSameSchoolGuardians($data->guardianAssociations, $school);
+        $this->guardians->assertUniqueNewGuardianIdentities($guardianEntries);
+        $guardians = $this->guardians->activeSameSchoolGuardians($guardianEntries, $school);
 
-        return DB::transaction(function () use ($actor, $school, $data, $user, $academicYear, $guardians): StudentProfile {
+        return DB::transaction(function () use ($actor, $school, $data, $user, $academicYear, $guardianEntries, $guardians): StudentProfile {
             $profile = StudentProfile::query()->create([
                 'school_id' => $school->id,
                 'user_id' => $user?->id,
@@ -46,11 +53,21 @@ final class StudentProfileCreationService
                 'status_effective_at' => $data->enrolledAt,
             ]);
 
-            foreach ($data->guardianAssociations as $association) {
-                $guardian = $guardians->firstWhere('uuid', $association['guardian_id']);
+            foreach ($guardianEntries as $entry) {
+                $guardian = $entry->isExistingGuardian()
+                    ? $guardians->firstWhere('uuid', $entry->guardianId)
+                    : Guardian::query()->create([
+                        'school_id' => $school->id,
+                        'full_name' => $entry->newGuardian?->fullName,
+                        'relationship_type' => $entry->relationshipType,
+                        'contact_email' => $entry->newGuardian?->contactEmail,
+                        'contact_phone' => $entry->newGuardian?->contactPhone,
+                        'status' => 'active',
+                    ]);
+
                 $profile->guardians()->attach($guardian->id, [
                     'school_id' => $school->id,
-                    'relationship_type' => $association['relationship_type'],
+                    'relationship_type' => $entry->relationshipType,
                     'status' => 'active',
                 ]);
             }
@@ -69,6 +86,20 @@ final class StudentProfileCreationService
 
             return $profile->load(['school', 'user', 'currentAcademicYear', 'guardians.school', 'enrollmentHistories.school', 'enrollmentHistories.studentProfile', 'enrollmentHistories.actor']);
         });
+    }
+
+    /**
+     * @param  array<int, StudentProfileGuardianEntryData>  $guardianEntries
+     */
+    private function assertCanManageGuardiansWhenPresent(User $actor, School $school, array $guardianEntries): void
+    {
+        if ($guardianEntries === []) {
+            return;
+        }
+
+        if (! $actor->hasSchoolPermission('guardians.manage', $school->id)) {
+            throw new AuthorizationException('The authenticated user lacks permission for this action.');
+        }
     }
 
     private function assertRegistrationIsUnique(School $school, string $registrationNumber): void

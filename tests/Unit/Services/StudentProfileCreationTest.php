@@ -21,7 +21,7 @@ final class StudentProfileCreationTest extends TestCase
     {
         $school = School::factory()->create();
         $otherSchool = School::factory()->create();
-        $admin = $this->createSchoolAdmin($school, ['student_profiles.manage']);
+        $admin = $this->createSchoolAdmin($school, ['student_profiles.manage', 'guardians.manage']);
         $guardian = Guardian::query()->create([
             'school_id' => $otherSchool->id,
             'full_name' => 'Other Guardian',
