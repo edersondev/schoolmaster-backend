@@ -18,7 +18,7 @@ final class StudentGuardianAssociationResource extends JsonResource
             'relationship_type' => $this->pivot?->relationship_type ?? $this->relationship_type,
             'contact_email' => $this->contact_email,
             'contact_phone' => $this->contact_phone,
-            'status' => $this->status,
+            'status' => $this->pivot?->status ?? $this->status,
         ];
     }
 }
